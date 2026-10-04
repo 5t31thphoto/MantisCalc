@@ -18,7 +18,9 @@ Built on GitHub Actions · No menus · Stamp units, then solve
 
 When **2ND** is on, the header shows a purple **2ND** badge and keys show their secondary labels (lime text).
 
-**Pages (A/C):** ELEC → MECH/RF → BUILD → KITCHEN → MONEY → MATH → …
+**Pages (A/C):** MATH → ELEC → MECH/RF → BUILD → KITCHEN → MONEY → …
+
+**On-device guide:** 2ND + tap header. Scroll upper/lower half. Exit bottom bar / B / CLR.
 
 **Register flags** (header right): green pills **V A R P C L f d** appear when those registers are set.
 

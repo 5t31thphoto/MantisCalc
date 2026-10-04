@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include "logo_rgb565.h"
 
-// MantisCalculator v1.5 — full multitool. Dense. Agent-maintained.
+// MantisCalculator v1.5.1 — full multitool. Dense. Agent-maintained.
 // A/C=pages B=2nd. Stamp units → solvers. No menus. No long-press.
 // === SECTIONS: consts | regs | keys | core | unit | elec | mech | build | kit | money | math | ui ===
 
@@ -33,6 +33,23 @@ static char op=0,entry[40]="0";static int entryLen=1,page=0,tapeCount=0;
 static char tape[8][48];
 static uint8_t stepOhm=0,stepFilt=0,stepVD=0,stepSlope=0,stepTrig=0,stepBake=0,stepPaint=0,stepAmort=0,stepConv=0;
 static unsigned long lastTouch=0;
+static bool helpMode=false;static int helpScroll=0;
+// On-device guide (2ND + tap header). ASCII only.
+static const char* helpText[6][14]={
+ // MATH
+ {"MATH — scientific","x^2 / sqrt  square/root","1/x  reciprocal","LOG 10^x  LN e^x","SIN COS TAN  degrees","FRAC  best a/b fraction","ENG  engineering fmt","STAT  add sample","2ND STAT  min max avg","2ND num: pi e % ^ BS","CLR MR MS MC ANS EE","Stamp nothing — pure math","Examples: 0.375 FRAC=3/8","pi FRAC ~ 355/113"},
+ // ELEC
+ {"ELEC — electrical","Stamp VOLTS AMPS OHMS","WATTS FARAD Hz DIST","OHM/PWR  solve V/I/R/P","  press again for power","VDROP  drop % req AWG","  needs V A DIST(ft)","FILT  RC fc and tau","AWG  gauge or recommend","dB / PF  log power factor","2ND FARAD=uF OHMS=kOhm","2ND Hz=wavelength","Al/Cu: 2ND CONV toggle","Ex: 120V 15A OHM/PWR"},
+ // MECH
+ {"MECH/RF — motors RF","KV CELLS RPM THRUST","WEIGHT RATIO PROP GEAR","BAT Wh  MOTOR rpm","FREQ WAVE wavelength","PROP needs KV cells diam","MOTOR: KV*S*4.2 = RPM","BAT: mAh*S*3.7/1000 Wh","2ND: unit converts lb kg","GEAR 2ND: power from t*w","First-order estimates only","", "", ""},
+ // BUILD
+ {"BUILD — trades","RISE RUN SLOPE ANGLE","AREA VOL ROOF STAIRS","BOARD PAINT CONC TRIG","SLOPE: ratio ang percent","ROOF: rafter length","PAINT: RISE=perim RUN=h","  DIST=doors ANGLE=wins","  then coats in TOTAL","BOARD: T*W*L/12 board-ft","CONC: ft3 to yd3 +10%","TRIG: sin cos tan cycle","Ex: 12 rise 16 run ROOF","=20 ft rafter"},
+ // KITCHEN
+ {"KITCHEN — baking","FLOUR TOTAL HYDR% SERV","TEMP PRICE BAKE RECIPE","CONV volume chain","  cup tbsp tsp mL L gal","HYDR% 2ND: water grams","BAKE steps baker math","TEMP 2ND stamps F","Scale: TOTAL/SERV","", "", "", "", ""},
+ // MONEY
+ {"MONEY — loans","PRINC RATE% TERM PMT","INT SAV PAYOFF AMORT","PMT needs P rate months","Ex: 100000 5% 360 PMT","  ~536.82 /mo","AMORT: step bal each mo","PAYOFF: months w/ extra","SAV: compound FV","PRINC 2ND: present value","", "", "", ""}
+};
+
 static const char* stepTag=""; // shown in header when sequential active
 
 enum Act{
@@ -53,11 +70,13 @@ enum Act{
 };
 struct Key{const char* p;const char* s;Act a,b;};
 
-static const char* pageNames[]={"ELEC","MECH/RF","BUILD","KITCHEN","MONEY","MATH"};
-static const uint16_t accents[]={0x038E,0x580B,0xAF27,0x0451,0x780F,0xC700}; // teal purple lime teal2 purple2 lime
+static const char* pageNames[]={"MATH","ELEC","MECH/RF","BUILD","KITCHEN","MONEY"};
+static const uint16_t accents[]={0xC700,0x038E,0x580B,0xAF27,0x0451,0x780F}; // MATH lime, ELEC teal, ...
 
 // === KEYS: every secondary label matches its action ===
 static Key pages[6][12]={
+ {{"x^2","sqrt",A_SQUARE,A_SQRT},{"sqrt","x^2",A_SQRT,A_SQUARE},{"1/x","%",A_RECIP,A_PERCENT},{"LOG","10^x",A_LOG,A_POW10},{"LN","e^x",A_LN,A_EXP},{"e^x","LN",A_EXP,A_LN},
+  {"SIN","asin",A_SIN,A_ASIN},{"COS","acos",A_COS,A_ACOS},{"TAN","atan",A_TAN,A_ATAN},{"WAVE","f",A_WAVELEN,A_HZ},{"FRAC","ENG",A_FRAC,A_ENG},{"STAT","minMx",A_STAT,A_MINMAX}},
  {{"VOLTS","mV",A_V,A_SIPREFIX},{"AMPS","mA",A_A,A_SIPREFIX},{"OHMS","kOhm",A_R,A_SIPREFIX},{"WATTS","dBm",A_P,A_DB},{"FARAD","uF",A_C,A_SIPREFIX},{"Hz","wave",A_HZ,A_WAVELEN},
   {"DIST","ft-in",A_DIST,A_CONVERT},{"OHM/PWR","XL/XC",A_OHMPWR,A_REACT},{"VDROP","Al/Cu",A_VDROP,A_CONVERT},{"FILT","RLC",A_FILT,A_RLC},{"AWG","cmil",A_AWG,A_CMIL},{"dB","PF",A_DB,A_PF}},
  {{"KV","RPM",A_KV,A_RPM},{"CELLS","xV",A_CELLS,A_CONVERT},{"RPM","rps",A_RPM,A_CONVERT},{"THRUST","lb",A_THRUST,A_CONVERT},{"WEIGHT","kg",A_WEIGHT,A_CONVERT},{"RATIO","gear",A_RATIO,A_GEAR},
@@ -67,9 +86,8 @@ static Key pages[6][12]={
  {{"FLOUR","%",A_FLOUR,A_RECIPEPCT},{"TOTAL","/serv",A_TOTAL,A_SERV},{"HYDR%","H2O",A_HYDR,A_HYDRWATER},{"SERV","dens",A_SERV,A_DENSITY},{"TEMP","F",A_TEMP,A_TEMPF},{"PRICE","x",A_PRICE,A_TOTAL},
   {"BAKE","next",A_BAKE,A_HYDRWATER},{"RECIPE","scale",A_RECIPE,A_RECIPEPCT},{"DENS","g/cup",A_DENSITY,A_CONVERT},{"CONV","chain",A_CONVERT,A_SIPREFIX},{"AREA","pan",A_AREA,A_PANROUND},{"VOL","pan",A_VOLUME,A_CYLVOL}},
  {{"PRINC","PV",A_PRINC,A_PRESENT},{"RATE%","I/mo",A_RATE,A_INTEREST},{"TERM","n mo",A_TERM,A_PAYMONTHS},{"PMT","solve",A_LOAN,A_AMORT},{"INT","total",A_INTEREST,A_LOAN},{"SAV","FV",A_COMPOUND,A_FV},
-  {"PAYOFF","extra",A_PAYOFF,A_PAYMONTHS},{"AMORT","step",A_AMORT,A_CASHFLOW},{"%","d%",A_PERCENT,A_PERCENTDELTA},{"ROUND","sig",A_ROUND,A_SIGFIG},{"PRICE","x",A_PRICE,A_TOTAL},{"TOTAL","sum",A_TOTAL,A_CASHFLOW}},
- {{"x^2","sqrt",A_SQUARE,A_SQRT},{"sqrt","x^2",A_SQRT,A_SQUARE},{"1/x","%",A_RECIP,A_PERCENT},{"LOG","10^x",A_LOG,A_POW10},{"LN","e^x",A_LN,A_EXP},{"e^x","LN",A_EXP,A_LN},
-  {"SIN","asin",A_SIN,A_ASIN},{"COS","acos",A_COS,A_ACOS},{"TAN","atan",A_TAN,A_ATAN},{"WAVE","f",A_WAVELEN,A_HZ},{"FRAC","ENG",A_FRAC,A_ENG},{"STAT","minMx",A_STAT,A_MINMAX}}
+  {"PAYOFF","extra",A_PAYOFF,A_PAYMONTHS},{"AMORT","step",A_AMORT,A_CASHFLOW},{"%","d%",A_PERCENT,A_PERCENTDELTA},{"ROUND","sig",A_ROUND,A_SIGFIG},{"PRICE","x",A_PRICE,A_TOTAL},{"TOTAL","sum",A_TOTAL,A_CASHFLOW}}
+
 };
 
 // === CORE ===
@@ -91,7 +109,7 @@ static void setEntry(double x){fmt(x,entry,sizeof entry);entryLen=strlen(entry);
 static double getEntry(){return strtod(entry,nullptr);}
 static double curValue(){return entering?getEntry():cur;}
 static void clearEntry(){
-  strcpy(entry,"0");entryLen=1;entering=true;cur=0;op=0;stepTag="";
+  strcpy(entry,"0");entryLen=1;entering=true;cur=0;op=0;stepTag="";helpMode=false;
   stepOhm=stepFilt=stepVD=stepSlope=stepTrig=stepBake=stepPaint=stepAmort=stepConv=0;mark();
 }
 static void setReg(Value&v,double x,Unit u){v.x=x;v.u=u;v.set=true;reg.answer=v;setEntry(x);tapeVal("=",x,u);}
@@ -426,12 +444,32 @@ static void drawRegFlags(){
 }
 static void draw(){
   if(!dirty)return;dirty=false;
+  if(helpMode){
+    M5.Display.fillScreen(0x08C3);
+    M5.Display.fillRect(0,0,W,22,accents[page]);
+    M5.Display.setTextColor(0xFFFF);M5.Display.setTextSize(1);
+    M5.Display.setCursor(4,4);M5.Display.printf("HELP %s  (tap hdr exit)",pageNames[page]);
+    M5.Display.setTextColor(0xAF27);
+    int y=28;
+    for(int i=0;i<14;i++){
+      int idx=i+helpScroll;
+      if(idx>=14)break;
+      const char* line=helpText[page][idx];
+      if(!line||!line[0])continue;
+      M5.Display.setCursor(6,y);M5.Display.print(line);
+      y+=14;if(y>BAR_Y-4)break;
+    }
+    M5.Display.fillRect(0,BAR_Y,W,H-BAR_Y,0x0C63);
+    M5.Display.setTextColor(0xFFFF);M5.Display.setCursor(8,BAR_Y+7);
+    M5.Display.print("tap upper=up  lower=down  bar=exit");
+    return;
+  }
   M5.Display.fillScreen(0x08C3);
   M5.Display.fillRect(0,0,W,TOP,accents[page]);
   M5.Display.setTextColor(0xFFFF);M5.Display.setTextSize(1);
   M5.Display.setCursor(4,3);
   M5.Display.printf("%s",pageNames[page]);
-  if(shift){M5.Display.fillRoundRect(70,2,28,12,2,0x580B);M5.Display.setCursor(74,4);M5.Display.print("2ND");}
+  if(shift){M5.Display.fillRoundRect(70,2,28,12,2,0x580B);M5.Display.setCursor(74,4);M5.Display.print("2ND");M5.Display.setTextColor(0xAF27);M5.Display.setCursor(102,4);M5.Display.print("hdr=HELP");M5.Display.setTextColor(0xFFFF);}
   if(engMode){M5.Display.setCursor(104,3);M5.Display.print("ENG");}
   if(stepTag[0]){M5.Display.setCursor(140,3);M5.Display.print(stepTag);}
   if(useAl&&page==0){M5.Display.setCursor(170,3);M5.Display.print("Al");}
@@ -476,9 +514,21 @@ static void touch(){
   auto t=M5.Touch.getDetail();if(!t.isPressed())return;
   if(millis()-lastTouch<110)return;lastTouch=millis();
   int x=t.x,y=t.y;vib();
+  // 2ND + tap header opens on-device guide for this page
+  if(y<TOP){
+    if(shift||helpMode){helpMode=!helpMode;helpScroll=0;shift=false;vib();mark();}
+    return;
+  }
+  if(helpMode){
+    // scroll help: top half up, bottom half down; B/bar exits
+    if(y>=BAR_Y){helpMode=false;mark();return;}
+    if(y<H/2){if(helpScroll>0)helpScroll--;}
+    else helpScroll++;
+    mark();return;
+  }
   if(y>=BAR_Y){
-    if(x<106){page=(page+5)%6;clearEntry();shift=false;}
-    else if(x>212){page=(page+1)%6;clearEntry();shift=false;}
+    if(x<106){page=(page+5)%6;clearEntry();shift=false;helpMode=false;}
+    else if(x>212){page=(page+1)%6;clearEntry();shift=false;helpMode=false;}
     else shift=!shift;
     mark();return;
   }
@@ -534,9 +584,9 @@ void setup(){
 }
 void loop(){
   M5.update();
-  if(M5.BtnA.wasPressed()){page=(page+5)%6;clearEntry();shift=false;vib();mark();}
-  if(M5.BtnC.wasPressed()){page=(page+1)%6;clearEntry();shift=false;vib();mark();}
-  if(M5.BtnB.wasPressed()){shift=!shift;vib();mark();}
+  if(M5.BtnA.wasPressed()){page=(page+5)%6;clearEntry();shift=false;helpMode=false;vib();mark();}
+  if(M5.BtnC.wasPressed()){page=(page+1)%6;clearEntry();shift=false;helpMode=false;vib();mark();}
+  if(M5.BtnB.wasPressed()){if(helpMode)helpMode=false;else shift=!shift;vib();mark();}
   touch();
   static unsigned long last=0;
   if(dirty||millis()-last>200){draw();last=millis();}
