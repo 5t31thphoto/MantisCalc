@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include "logo_rgb565.h"
 
-// MantisCalculator v1.5.1 — full multitool. Dense. Agent-maintained.
+// MantisCalculator v1.5.2 — full multitool. Dense. Agent-maintained.
 // A/C=pages B=2nd. Stamp units → solvers. No menus. No long-press.
 // === SECTIONS: consts | regs | keys | core | unit | elec | mech | build | kit | money | math | ui ===
 

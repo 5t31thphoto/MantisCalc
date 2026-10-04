@@ -4,8 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>MantisCalc — The Ultimate Calculator</title>
-  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="./assets/logo.jpeg">
+  <link rel="icon" href="./assets/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="./assets/favicon-16.png">
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
   <script type="module" src="https://unpkg.com/esp-web-tools@10.1.1/dist/web/install-button.js?module"></script>
   <style>
     :root{
@@ -24,7 +26,7 @@
     }
     .hero{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
     .hero img{
-      width:120px;height:120px;object-fit:cover;border-radius:22px;
+      width:120px;height:auto;max-height:140px;object-fit:contain;border-radius:16px;
       box-shadow:0 8px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.15);
       border:2px solid #2a4a4a;
     }
@@ -55,7 +57,7 @@
 </head>
 <body>
   <div class="hero">
-    <img src="./assets/logo.jpeg" alt="MantisCalc logo" width="120" height="120">
+    <img src="./assets/logo.png" alt="MantisCalc logo" width="120" style="height:auto;object-fit:contain">
     <div>
       <h1>MANTIS<span class="brand">CALC</span></h1>
       <p class="tagline">THE ULTIMATE <b>CALCULATOR</b></p>
