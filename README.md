@@ -1,6 +1,6 @@
 # MantisCalculator
 
-A calculator-first, deterministic engineering/trades calculator for the **M5Stack Core2**.
+An engineering/trades style calculator for the **M5Stack Core2**. DESIGNED FOR DIY, HOMEOWNERS, AND HOBBYISTS
 
 It is designed to behave like a real physical calculator first: ordinary arithmetic is always available as `1 + 2 =`, while domain intelligence is layered behind unit-stamped registers and sequential function keys.
 
