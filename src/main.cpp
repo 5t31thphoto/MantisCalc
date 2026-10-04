@@ -4,8 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "logo_rgb565.h"
 
-// MantisCalculator v1.4 — full multitool. Dense. Agent-maintained.
+// MantisCalculator v1.5 — full multitool. Dense. Agent-maintained.
 // A/C=pages B=2nd. Stamp units → solvers. No menus. No long-press.
 // === SECTIONS: consts | regs | keys | core | unit | elec | mech | build | kit | money | math | ui ===
 
@@ -57,23 +58,23 @@ static const uint16_t accents[]={0x038E,0x580B,0xAF27,0x0451,0x780F,0xC700}; // 
 
 // === KEYS: every secondary label matches its action ===
 static Key pages[6][12]={
- {{"VOLTS","mV",A_V,A_SIPREFIX},{"AMPS","mA",A_A,A_SIPREFIX},{"OHMS","kΩ",A_R,A_SIPREFIX},{"WATTS","dBm",A_P,A_DB},{"FARAD","µF",A_C,A_SIPREFIX},{"Hz","λ",A_HZ,A_WAVELEN},
-  {"DIST","ft→in",A_DIST,A_CONVERT},{"OHM/PWR","XL/XC",A_OHMPWR,A_REACT},{"VDROP","Al/Cu",A_VDROP,A_CONVERT},{"FILT","RLC",A_FILT,A_RLC},{"AWG","cmil",A_AWG,A_CMIL},{"dB","PF",A_DB,A_PF}},
- {{"KV","→RPM",A_KV,A_RPM},{"CELLS","×V",A_CELLS,A_CONVERT},{"RPM","rps",A_RPM,A_CONVERT},{"THRUST","→lb",A_THRUST,A_CONVERT},{"WEIGHT","→kg",A_WEIGHT,A_CONVERT},{"RATIO","gear",A_RATIO,A_GEAR},
-  {"PROP","mph",A_PROP,A_SPEED},{"GEAR","P=τω",A_GEAR,A_TORQUEPOWER},{"FREQ","λ",A_HZ,A_WAVELEN},{"WAVE","→ft",A_WAVELEN,A_CONVERT},{"BAT","Wh",A_BATTERY,A_BATTERYWH},{"MOTOR","τ",A_MOTOR,A_TORQUE}},
- {{"RISE","slope",A_RISE,A_SLOPE},{"RUN","∠",A_RUN,A_ANGLE_SOLVE},{"SLOPE","∠",A_SLOPE,A_ANGLE_SOLVE},{"ANGLE","rise",A_ANGLE,A_RISE_FROM_ANGLE},{"AREA","○",A_AREA,A_CIRCLEAREA},{"VOL","cyl",A_VOLUME,A_CYLVOL},
-  {"ROOF","hyp",A_ROOF,A_PYTH},{"STAIRS","#",A_STAIRS,A_STAIRCOUNT},{"BOARD","+10%",A_BOARD,A_MATERIALWASTE},{"PAINT","net",A_PAINT,A_RECTAREA},{"CONC","yd³",A_CONCRETE,A_CONVERT},{"TRIG","inv",A_TRIG,A_ASIN}},
- {{"FLOUR","%",A_FLOUR,A_RECIPEPCT},{"TOTAL","/serv",A_TOTAL,A_SERV},{"HYDR%","H₂O",A_HYDR,A_HYDRWATER},{"SERV","dens",A_SERV,A_DENSITY},{"TEMP","°F",A_TEMP,A_TEMPF},{"PRICE","×",A_PRICE,A_TOTAL},
+ {{"VOLTS","mV",A_V,A_SIPREFIX},{"AMPS","mA",A_A,A_SIPREFIX},{"OHMS","kOhm",A_R,A_SIPREFIX},{"WATTS","dBm",A_P,A_DB},{"FARAD","uF",A_C,A_SIPREFIX},{"Hz","wave",A_HZ,A_WAVELEN},
+  {"DIST","ft-in",A_DIST,A_CONVERT},{"OHM/PWR","XL/XC",A_OHMPWR,A_REACT},{"VDROP","Al/Cu",A_VDROP,A_CONVERT},{"FILT","RLC",A_FILT,A_RLC},{"AWG","cmil",A_AWG,A_CMIL},{"dB","PF",A_DB,A_PF}},
+ {{"KV","RPM",A_KV,A_RPM},{"CELLS","xV",A_CELLS,A_CONVERT},{"RPM","rps",A_RPM,A_CONVERT},{"THRUST","lb",A_THRUST,A_CONVERT},{"WEIGHT","kg",A_WEIGHT,A_CONVERT},{"RATIO","gear",A_RATIO,A_GEAR},
+  {"PROP","mph",A_PROP,A_SPEED},{"GEAR","Pwr",A_GEAR,A_TORQUEPOWER},{"FREQ","wave",A_HZ,A_WAVELEN},{"WAVE","ft",A_WAVELEN,A_CONVERT},{"BAT","Wh",A_BATTERY,A_BATTERYWH},{"MOTOR","torq",A_MOTOR,A_TORQUE}},
+ {{"RISE","slope",A_RISE,A_SLOPE},{"RUN","ang",A_RUN,A_ANGLE_SOLVE},{"SLOPE","ang",A_SLOPE,A_ANGLE_SOLVE},{"ANGLE","rise",A_ANGLE,A_RISE_FROM_ANGLE},{"AREA","circ",A_AREA,A_CIRCLEAREA},{"VOL","cyl",A_VOLUME,A_CYLVOL},
+  {"ROOF","hyp",A_ROOF,A_PYTH},{"STAIRS","#",A_STAIRS,A_STAIRCOUNT},{"BOARD","+10%",A_BOARD,A_MATERIALWASTE},{"PAINT","net",A_PAINT,A_RECTAREA},{"CONC","yd3",A_CONCRETE,A_CONVERT},{"TRIG","inv",A_TRIG,A_ASIN}},
+ {{"FLOUR","%",A_FLOUR,A_RECIPEPCT},{"TOTAL","/serv",A_TOTAL,A_SERV},{"HYDR%","H2O",A_HYDR,A_HYDRWATER},{"SERV","dens",A_SERV,A_DENSITY},{"TEMP","F",A_TEMP,A_TEMPF},{"PRICE","x",A_PRICE,A_TOTAL},
   {"BAKE","next",A_BAKE,A_HYDRWATER},{"RECIPE","scale",A_RECIPE,A_RECIPEPCT},{"DENS","g/cup",A_DENSITY,A_CONVERT},{"CONV","chain",A_CONVERT,A_SIPREFIX},{"AREA","pan",A_AREA,A_PANROUND},{"VOL","pan",A_VOLUME,A_CYLVOL}},
- {{"PRINC","PV",A_PRINC,A_PRESENT},{"RATE%","I/mo",A_RATE,A_INTEREST},{"TERM","n→",A_TERM,A_PAYMONTHS},{"PMT","solve",A_LOAN,A_AMORT},{"INT","total",A_INTEREST,A_LOAN},{"SAV","FV",A_COMPOUND,A_FV},
-  {"PAYOFF","extra",A_PAYOFF,A_PAYMONTHS},{"AMORT","step",A_AMORT,A_CASHFLOW},{"%","Δ%",A_PERCENT,A_PERCENTDELTA},{"ROUND","sig",A_ROUND,A_SIGFIG},{"PRICE","×",A_PRICE,A_TOTAL},{"TOTAL","sum",A_TOTAL,A_CASHFLOW}},
- {{"x²","√x",A_SQUARE,A_SQRT},{"√x","x²",A_SQRT,A_SQUARE},{"1/x","%",A_RECIP,A_PERCENT},{"LOG","10ˣ",A_LOG,A_POW10},{"LN","eˣ",A_LN,A_EXP},{"eˣ","LN",A_EXP,A_LN},
-  {"SIN","asin",A_SIN,A_ASIN},{"COS","acos",A_COS,A_ACOS},{"TAN","atan",A_TAN,A_ATAN},{"WAVE","f",A_WAVELEN,A_HZ},{"FRAC","ENG",A_FRAC,A_ENG},{"STAT","Σμ",A_STAT,A_MINMAX}}
+ {{"PRINC","PV",A_PRINC,A_PRESENT},{"RATE%","I/mo",A_RATE,A_INTEREST},{"TERM","n mo",A_TERM,A_PAYMONTHS},{"PMT","solve",A_LOAN,A_AMORT},{"INT","total",A_INTEREST,A_LOAN},{"SAV","FV",A_COMPOUND,A_FV},
+  {"PAYOFF","extra",A_PAYOFF,A_PAYMONTHS},{"AMORT","step",A_AMORT,A_CASHFLOW},{"%","d%",A_PERCENT,A_PERCENTDELTA},{"ROUND","sig",A_ROUND,A_SIGFIG},{"PRICE","x",A_PRICE,A_TOTAL},{"TOTAL","sum",A_TOTAL,A_CASHFLOW}},
+ {{"x^2","sqrt",A_SQUARE,A_SQRT},{"sqrt","x^2",A_SQRT,A_SQUARE},{"1/x","%",A_RECIP,A_PERCENT},{"LOG","10^x",A_LOG,A_POW10},{"LN","e^x",A_LN,A_EXP},{"e^x","LN",A_EXP,A_LN},
+  {"SIN","asin",A_SIN,A_ASIN},{"COS","acos",A_COS,A_ACOS},{"TAN","atan",A_TAN,A_ATAN},{"WAVE","f",A_WAVELEN,A_HZ},{"FRAC","ENG",A_FRAC,A_ENG},{"STAT","minMx",A_STAT,A_MINMAX}}
 };
 
 // === CORE ===
 static const char* us(Unit u){
-  static const char* n[]={"","V","A","Ω","W","F","H","Hz","m","ft","in","yd","°","rad","%","g","kg","lb","rpm","KV","S","°C","°F","cup","tbsp","tsp","fl oz","$","gal","L","AWG","cmil","yd³","mL","Wh"};
+  static const char* n[]={"","V","A","ohm","W","F","H","Hz","m","ft","in","yd","deg","rad","%","g","kg","lb","rpm","KV","S","C","F","cup","tbsp","tsp","floz","$","gal","L","AWG","cmil","yd3","mL","Wh"};
   return (u>=0&&u<=U_WH)?n[u]:"";
 }
 static void vib(){M5.Power.setVibration(true);delay(5);M5.Power.setVibration(false);}
@@ -93,7 +94,7 @@ static void clearEntry(){
   strcpy(entry,"0");entryLen=1;entering=true;cur=0;op=0;stepTag="";
   stepOhm=stepFilt=stepVD=stepSlope=stepTrig=stepBake=stepPaint=stepAmort=stepConv=0;mark();
 }
-static void setReg(Value&v,double x,Unit u){v.x=x;v.u=u;v.set=true;reg.answer=v;setEntry(x);tapeVal("→",x,u);}
+static void setReg(Value&v,double x,Unit u){v.x=x;v.u=u;v.set=true;reg.answer=v;setEntry(x);tapeVal("=",x,u);}
 static bool need(const Value&v){if(!v.set){beep();return false;}return true;}
 static void digit(int d){if(!entering||!strcmp(entry,"0")){entry[0]=char('0'+d);entry[1]=0;entryLen=1;entering=true;}else if(entryLen<38){entry[entryLen++]=char('0'+d);entry[entryLen]=0;}mark();}
 static void dot(){if(!entering){strcpy(entry,"0.");entryLen=2;entering=true;}else if(!strchr(entry,'.')&&entryLen<37){entry[entryLen++]='.';entry[entryLen]=0;}mark();}
@@ -190,7 +191,7 @@ static void toFraction(){
 // === ELEC ===
 // TEST: 120V 15A → R=8Ω P=1800W
 static void ohmPwr(){
-  stepOhm=(stepOhm%4)+1;stepTag="ΩP";
+  stepOhm=(stepOhm%4)+1;stepTag="Ohm";
   double V=reg.v.x,I=reg.a.x,R=reg.r.x,P=reg.p.x;
   if(stepOhm==1){if(reg.v.set&&reg.a.set)setReg(reg.r,V/I,U_OHM);else if(reg.v.set&&reg.r.set)setReg(reg.a,V/R,U_A);else if(reg.a.set&&reg.r.set)setReg(reg.v,I*R,U_V);else if(reg.v.set&&reg.p.set)setReg(reg.a,P/V,U_A);else{beep();stepOhm=0;}}
   else if(stepOhm==2){if(reg.v.set&&reg.a.set)setReg(reg.p,V*I,U_W);else if(reg.v.set&&reg.r.set)setReg(reg.p,V*V/R,U_W);else if(reg.a.set&&reg.r.set)setReg(reg.p,I*I*R,U_W);else{beep();stepOhm=0;}}
@@ -202,7 +203,7 @@ static void filt(){
   stepFilt=(stepFilt%3)+1;stepTag="FILT";
   if(!need(reg.r)||!need(reg.c)){stepFilt=0;return;}
   double R=reg.r.x,C=reg.c.x;
-  if(stepFilt==1){setReg(reg.hz,1/(2*PI_D*R*C),U_HZ);tapeVal("τ",R*C,U_NONE);}
+  if(stepFilt==1){setReg(reg.hz,1/(2*PI_D*R*C),U_HZ);tapeVal("tau",R*C,U_NONE);}
   else if(stepFilt==2)setReg(reg.answer,R*C,U_NONE);
   else setReg(reg.answer,0.69314718056*R*C,U_NONE);
 }
@@ -441,8 +442,8 @@ static void draw(){
   M5.Display.setTextSize(1);M5.Display.setTextColor(0x9CD3);
   for(int i=0;i<2&&i<tapeCount;i++){M5.Display.setCursor(4,TAPE_Y+1+i*8);M5.Display.print(tape[i]);}
   for(int i=0;i<12;i++){int row=i/6,col=i%6;drawKey(col*53+1,FUNC_Y+row*34,51,32,pages[page][i],shift);}
-  const char*nums[16]={"7","8","9","÷","4","5","6","×","1","2","3","−","0",".","=","+"};
-  const char*secs[16]={"π","e","%","^","BS","±","ABS","mod","1/x","ANS","EE","Δ%","CLR","MR","MS","MC"};
+  const char*nums[16]={"7","8","9","/","4","5","6","*","1","2","3","-","0",".","=","+"};
+  const char*secs[16]={"pi","e","%","^","BS","+/-","ABS","mod","1/x","ANS","EE","d%","CLR","MR","MS","MC"};
   for(int i=0;i<16;i++){
     int row=i/4,col=i%4,x=2+col*79,y=NUM_Y+row*22;
     bool isOp=(i==3||i==7||i==11||i==15||i==14);
@@ -508,10 +509,28 @@ static void touch(){
   }
 }
 
+static void splash(){
+  M5.Display.fillScreen(0x08C3);
+  M5.Display.fillRoundRect(20,16,280,200,14,0x4A69);
+  M5.Display.fillRoundRect(26,22,268,188,12,0x19C7);
+  // raw RGB565 logo centered
+  int lx=(W-(int)logo_w)/2, ly=36;
+  M5.Display.pushImage(lx, ly, logo_w, logo_h, logo_rgb565);
+  M5.Display.setTextColor(0xAF27);M5.Display.setTextSize(2);
+  const char* title="MANTISCALC";
+  int tw=M5.Display.textWidth(title);
+  M5.Display.setCursor((W-tw)/2, ly+(int)logo_h+8);M5.Display.print(title);
+  M5.Display.setTextSize(1);M5.Display.setTextColor(0xFFFF);
+  const char* sub="THE ULTIMATE CALCULATOR";
+  tw=M5.Display.textWidth(sub);
+  M5.Display.setCursor((W-tw)/2, ly+(int)logo_h+30);M5.Display.print(sub);
+  M5.Speaker.tone(660,40);delay(30);M5.Speaker.tone(880,60);
+  delay(1600);
+}
 void setup(){
   auto cfg=M5.config();M5.begin(cfg);
   M5.Display.setRotation(1);M5.Display.setTextWrap(false);M5.Speaker.setVolume(28);
-  initAwg();dirty=true;draw();
+  initAwg();splash();dirty=true;draw();
 }
 void loop(){
   M5.update();
