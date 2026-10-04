@@ -1,1 +1,0 @@
-{"name":"MantisCalculator","version":"1.0.0","new_install_prompt_erase":true,"builds":[{"chipFamily":"ESP32","parts":[{"path":"./MantisCalculator.bin","offset":0}],"improv":false,"customFirmware":false}]}
