@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-// MantisCalculator v1.3.1 — full multitool. Dense. Agent-maintained.
+// MantisCalculator v1.4 — full multitool. Dense. Agent-maintained.
 // A/C=pages B=2nd. Stamp units → solvers. No menus. No long-press.
 // === SECTIONS: consts | regs | keys | core | unit | elec | mech | build | kit | money | math | ui ===
 
@@ -53,7 +53,7 @@ enum Act{
 struct Key{const char* p;const char* s;Act a,b;};
 
 static const char* pageNames[]={"ELEC","MECH/RF","BUILD","KITCHEN","MONEY","MATH"};
-static const uint16_t accents[]={0x051F,0xFD20,0x07E0,0x07FF,0xF81F,0xFFFF};
+static const uint16_t accents[]={0x038E,0x580B,0xAF27,0x0451,0x780F,0xC700}; // teal purple lime teal2 purple2 lime
 
 // === KEYS: every secondary label matches its action ===
 static Key pages[6][12]={
@@ -93,7 +93,7 @@ static void clearEntry(){
   strcpy(entry,"0");entryLen=1;entering=true;cur=0;op=0;stepTag="";
   stepOhm=stepFilt=stepVD=stepSlope=stepTrig=stepBake=stepPaint=stepAmort=stepConv=0;mark();
 }
-static void setReg(Value&v,double x,Unit u){v={x,u,true};reg.answer=v;setEntry(x);tapeVal("→",x,u);}
+static void setReg(Value&v,double x,Unit u){v.x=x;v.u=u;v.set=true;reg.answer=v;setEntry(x);tapeVal("→",x,u);}
 static bool need(const Value&v){if(!v.set){beep();return false;}return true;}
 static void digit(int d){if(!entering||!strcmp(entry,"0")){entry[0]=char('0'+d);entry[1]=0;entryLen=1;entering=true;}else if(entryLen<38){entry[entryLen++]=char('0'+d);entry[entryLen]=0;}mark();}
 static void dot(){if(!entering){strcpy(entry,"0.");entryLen=2;entering=true;}else if(!strchr(entry,'.')&&entryLen<37){entry[entryLen++]='.';entry[entryLen]=0;}mark();}
@@ -109,7 +109,7 @@ static void equals(){
   if(op){double left=cur,r=left;
     if(op=='+')r+=x;else if(op=='-')r-=x;else if(op=='*')r*=x;else if(op=='/')r=fabs(x)>1e-15?left/x:NAN;else if(op=='^')r=pow(left,x);else if(op=='%')r=fmod(left,x);
     char b[48],a[16],z[16],q[16];fmt(left,a,16);fmt(x,z,16);fmt(r,q,16);
-    snprintf(b,48,"%s %c %s=%s",a,op,z,q);tapeAdd(b);cur=r;op=0;setEntry(r);reg.answer={r,U_NONE,true};
+    snprintf(b,48,"%s %c %s=%s",a,op,z,q);tapeAdd(b);cur=r;op=0;setEntry(r);reg.answer.x=r;reg.answer.u=U_NONE;reg.answer.set=true;
   }else{cur=x;setEntry(x);tapeVal("=",x,U_NONE);}
 }
 static void initAwg(){for(int n=0;n<=40;n++){double d=5.0*pow(92.0,(36.0-n)/39.0);awgCm[n]=d*d;}}
@@ -236,7 +236,7 @@ static void capEnergy(){if(need(reg.c)&&need(reg.v))setReg(reg.answer,0.5*reg.c.
 // === MECH ===
 static void motor(){if(!need(reg.kv)||!need(reg.cells))return;setReg(reg.rpm,reg.kv.x*reg.cells.x*4.2,U_RPM);}
 static void gear(){if(!need(reg.ratio))return;if(reg.rpm.set)setReg(reg.answer,reg.rpm.x/reg.ratio.x,U_RPM);else if(reg.torque.set)setReg(reg.answer,reg.torque.x*reg.ratio.x,U_NONE);}
-static void prop(){if(!need(reg.kv)||!need(reg.cells)||!need(reg.diameter))return;double rpm=reg.kv.x*reg.cells.x*4.2;double pitch=reg.pitch.set?reg.pitch.x:reg.diameter.x;reg.rpm={rpm,U_RPM,true};setReg(reg.answer,rpm*pitch*60/63360.0,U_NONE);tapeVal("RPM",rpm,U_RPM);}
+static void prop(){if(!need(reg.kv)||!need(reg.cells)||!need(reg.diameter))return;double rpm=reg.kv.x*reg.cells.x*4.2;double pitch=reg.pitch.set?reg.pitch.x:reg.diameter.x;reg.rpm.x=rpm;reg.rpm.u=U_RPM;reg.rpm.set=true;setReg(reg.answer,rpm*pitch*60/63360.0,U_NONE);tapeVal("RPM",rpm,U_RPM);}
 static void battery(){if(need(reg.capacity)&&need(reg.cells))setReg(reg.energy,reg.capacity.x*reg.cells.x*3.7/1000.0,U_WH);else if(need(reg.weight)&&need(reg.thrust))setReg(reg.answer,reg.weight.x/reg.thrust.x,U_NONE);}
 static void batteryWh(){if(need(reg.capacity)&&need(reg.cells))setReg(reg.answer,reg.capacity.x*reg.cells.x*3.7/1000.0,U_WH);}
 static void torquePower(){if(need(reg.torque)&&need(reg.rpm))setReg(reg.answer,2*PI_D*reg.rpm.x*reg.torque.x/60.0,U_W);}
@@ -301,16 +301,16 @@ static void loan(){
   if(!need(reg.principal)||!need(reg.rate)||!need(reg.term))return;
   double P=reg.principal.x,rm=reg.rate.x/100/12,n=reg.term.x;
   double pay=fabs(rm)<1e-15?P/n:P*rm*pow(1+rm,n)/(pow(1+rm,n)-1);
-  reg.payment={pay,U_DOLLAR,true};reg.interest={pay*n-P,U_DOLLAR,true};
+  reg.payment.x=pay;reg.payment.u=U_DOLLAR;reg.payment.set=true;reg.interest.x=pay*n-P;reg.interest.u=U_DOLLAR;reg.interest.set=true;
   setEntry(pay);tapeVal("PMT",pay,U_DOLLAR);tapeVal("INT",reg.interest.x,U_DOLLAR);stepTag="LOAN";
 }
 static void payoff(){
   if(!need(reg.principal)||!need(reg.rate)||!need(reg.payment))return;
   double bal=reg.principal.x,rm=reg.rate.x/100/12,pay=reg.payment.x,ex=reg.extra.set?reg.extra.x:0;
   int n=0;while(bal>0.01&&n<1200){double i=bal*rm,pp=pay+ex-i;if(pp<=0){bal=NAN;break;}bal-=pp;n++;}
-  reg.term={(double)n,U_NONE,true};setEntry(n);tapeVal("MO",n,U_NONE);
+  reg.term.x=(double)n;reg.term.u=U_NONE;reg.term.set=true;setEntry(n);tapeVal("MO",n,U_NONE);
 }
-static void compound(){double P=need(reg.principal)?reg.principal.x:curValue(),rate=need(reg.rate)?reg.rate.x/100:0,n=need(reg.term)?reg.term.x:1;double A=P*pow(1+rate/12,n);reg.savings={A,U_DOLLAR,true};setEntry(A);tapeVal("FV",A,U_DOLLAR);}
+static void compound(){double P=need(reg.principal)?reg.principal.x:curValue(),rate=need(reg.rate)?reg.rate.x/100:0,n=need(reg.term)?reg.term.x:1;double A=P*pow(1+rate/12,n);reg.savings.x=A;reg.savings.u=U_DOLLAR;reg.savings.set=true;setEntry(A);tapeVal("FV",A,U_DOLLAR);}
 static void interestOnly(){if(need(reg.principal)&&need(reg.rate))setReg(reg.answer,reg.principal.x*reg.rate.x/100/12,U_DOLLAR);}
 static void payMonths(){if(need(reg.principal)&&need(reg.payment)&&need(reg.rate)){double r=reg.rate.x/100/12;double n=r>0?-log(1-r*reg.principal.x/reg.payment.x)/log(1+r):reg.principal.x/reg.payment.x;setReg(reg.answer,n,U_NONE);}}
 static void present(){if(need(reg.payment)&&need(reg.term)&&need(reg.rate)){double r=reg.rate.x/100/12;double pv=r?reg.payment.x*(1-pow(1+r,-reg.term.x))/r:reg.payment.x*reg.term.x;setReg(reg.answer,pv,U_DOLLAR);}}
@@ -328,7 +328,7 @@ static void trig(Act a){
   double x=curValue(),r=0;
   if(a==A_SIN)r=sin(x*PI_D/180);else if(a==A_COS)r=cos(x*PI_D/180);else if(a==A_TAN)r=tan(x*PI_D/180);
   else if(a==A_ASIN)r=asin(x)*180/PI_D;else if(a==A_ACOS)r=acos(x)*180/PI_D;else r=atan(x)*180/PI_D;
-  setEntry(r);reg.answer={r,U_NONE,true};tapeVal("TRIG",r,U_NONE);
+  setEntry(r);reg.answer.x=r;reg.answer.u=U_NONE;reg.answer.set=true;tapeVal("TRIG",r,U_NONE);
 }
 static void hyper(Act a){double x=curValue();setEntry(a==A_SINH?sinh(x):a==A_COSH?cosh(x):tanh(x));}
 static void statAdd(){double x=curValue();if(stN==0){stMin=stMax=x;stSum=0;}if(x<stMin)stMin=x;if(x>stMax)stMax=x;stSum+=x;stN++;tapeVal("n",stN,U_NONE);setEntry(x);stepTag="STAT";}
@@ -366,13 +366,13 @@ static void doAct(Act a){
   case A_TRIG:stepTrig=(stepTrig%3)+1;stepTag="TRI";trig(stepTrig==1?A_SIN:stepTrig==2?A_COS:A_TAN);break;
   case A_BAKE:bake();break;case A_RECIPE:recipe();break;case A_DENSITY:density();break;case A_CONVERT:convert();break;
   case A_LOAN:loan();break;case A_AMORT:amortStep();break;case A_COMPOUND:compound();break;case A_PAYOFF:payoff();break;
-  case A_PERCENT:setEntry(x/100);reg.answer={x/100,U_PCT,true};break;
+  case A_PERCENT:setEntry(x/100);reg.answer.x=x/100;reg.answer.u=U_PCT;reg.answer.set=true;break;
   case A_SQRT:setEntry(sqrt(x));break;case A_SQUARE:setEntry(x*x);break;case A_RECIP:setEntry(1/x);break;
   case A_LOG:setEntry(log10(x));break;case A_LN:setEntry(log(x));break;case A_EXP:setEntry(exp(x));break;case A_POW10:setEntry(pow(10,x));break;
   case A_SIN:case A_COS:case A_TAN:case A_ASIN:case A_ACOS:case A_ATAN:trig(a);break;
   case A_FRAC:toFraction();break;case A_ROUND:setEntry(round(x*100)/100);break;case A_CEIL:setEntry(ceil(x));break;case A_FLOOR:setEntry(floor(x));break;
   case A_STAT:statAdd();break;case A_MINMAX:statMinMax();break;case A_STATCLR:statClr();break;
-  case A_PI:setEntry(PI_D);reg.answer={PI_D,U_NONE,true};break;case A_E:setEntry(2.718281828459045);break;
+  case A_PI:setEntry(PI_D);reg.answer.x=PI_D;reg.answer.u=U_NONE;reg.answer.set=true;break;case A_E:setEntry(2.718281828459045);break;
   case A_ANS:if(reg.answer.set)setEntry(reg.answer.x);else setEntry(memory);break;case A_ABS:setEntry(fabs(x));break;
   case A_POW:binary('^');break;case A_MOD:binary('%');break;
   case A_EE:if(!entering){strcpy(entry,"1e");entryLen=2;entering=true;}else if(entryLen<35){entry[entryLen++]='e';entry[entryLen]=0;}mark();break;
@@ -396,13 +396,20 @@ static void doAct(Act a){
 
 // === UI ===
 static void drawKey(int x,int y,int w,int h,const Key&k,bool sh){
-  uint16_t fill=sh?0x2A4A:0x18C3;
-  M5.Display.fillRoundRect(x,y,w,h,4,fill);
-  M5.Display.drawRoundRect(x,y,w,h,4,sh?accents[page]:0x4A69);
+  // skeuomorphic raised key: face + light top edge + dark bottom edge
+  uint16_t face=sh?0x580B:0x19C7;      // purple when 2nd, teal-dark otherwise
+  uint16_t hi=sh?0xA81F:0x3A8A;        // highlight
+  uint16_t lo=sh?0x3006:0x0C63;        // shadow
+  M5.Display.fillRoundRect(x,y,w,h,5,face);
+  M5.Display.drawFastHLine(x+2,y+1,w-4,hi);
+  M5.Display.drawFastHLine(x+2,y+h-2,w-4,lo);
+  M5.Display.drawFastVLine(x+1,y+2,h-4,hi);
+  M5.Display.drawFastVLine(x+w-2,y+2,h-4,lo);
   const char*s=sh&&k.s[0]?k.s:k.p;
-  M5.Display.setTextSize(1);M5.Display.setTextColor(0xFFFF);
+  M5.Display.setTextSize(1);
+  M5.Display.setTextColor(sh?0xAF27:0xFFFF); // lime label when 2nd
   int tw=M5.Display.textWidth(s);M5.Display.setCursor(x+(w-tw)/2,y+6);M5.Display.print(s);
-  if(k.s[0]&&!sh){M5.Display.setTextColor(0x7BEF);M5.Display.setCursor(x+3,y+h-11);M5.Display.print("2");}
+  if(k.s[0]&&!sh){M5.Display.setTextColor(0xAF27);M5.Display.setCursor(x+3,y+h-11);M5.Display.print("2");}
 }
 static void drawRegFlags(){
   M5.Display.setTextSize(1);
@@ -411,26 +418,26 @@ static void drawRegFlags(){
   Value* vs[]={&reg.v,&reg.a,&reg.r,&reg.p,&reg.c,&reg.l,&reg.hz,&reg.dist};
   for(int i=0;i<8;i++){
     if(!vs[i]->set)continue;
-    M5.Display.fillRoundRect(x,20,10,12,2,0x39E7);
+    M5.Display.fillRoundRect(x,20,10,12,2,0x038E);
     M5.Display.setTextColor(0xFFFF);M5.Display.setCursor(x+2,22);M5.Display.print(labs[i]);
     x+=12;
   }
 }
 static void draw(){
   if(!dirty)return;dirty=false;
-  M5.Display.fillScreen(0x0841);
+  M5.Display.fillScreen(0x08C3);
   M5.Display.fillRect(0,0,W,TOP,accents[page]);
   M5.Display.setTextColor(0xFFFF);M5.Display.setTextSize(1);
   M5.Display.setCursor(4,3);
   M5.Display.printf("%s",pageNames[page]);
-  if(shift){M5.Display.fillRoundRect(70,2,28,12,2,0xFD20);M5.Display.setCursor(74,4);M5.Display.print("2ND");}
+  if(shift){M5.Display.fillRoundRect(70,2,28,12,2,0x580B);M5.Display.setCursor(74,4);M5.Display.print("2ND");}
   if(engMode){M5.Display.setCursor(104,3);M5.Display.print("ENG");}
   if(stepTag[0]){M5.Display.setCursor(140,3);M5.Display.print(stepTag);}
   if(useAl&&page==0){M5.Display.setCursor(170,3);M5.Display.print("Al");}
   char n[32];fmt(curValue(),n,sizeof n);
   M5.Display.setTextSize(2);M5.Display.setCursor(4,14);M5.Display.print(n);
   drawRegFlags();
-  M5.Display.fillRect(0,TAPE_Y,W,TAPE_H,0x10A2);
+  M5.Display.fillRect(0,TAPE_Y,W,TAPE_H,0x0C63);
   M5.Display.setTextSize(1);M5.Display.setTextColor(0x9CD3);
   for(int i=0;i<2&&i<tapeCount;i++){M5.Display.setCursor(4,TAPE_Y+1+i*8);M5.Display.print(tape[i]);}
   for(int i=0;i<12;i++){int row=i/6,col=i%6;drawKey(col*53+1,FUNC_Y+row*34,51,32,pages[page][i],shift);}
@@ -439,21 +446,29 @@ static void draw(){
   for(int i=0;i<16;i++){
     int row=i/4,col=i%4,x=2+col*79,y=NUM_Y+row*22;
     bool isOp=(i==3||i==7||i==11||i==15||i==14);
-    uint16_t fill=shift?0x2A4A:(isOp?0x1A4A:0x18C3);
-    M5.Display.fillRoundRect(x,y,76,20,3,fill);
-    M5.Display.drawRoundRect(x,y,76,20,3,shift?accents[page]:0x4A69);
-    M5.Display.setTextColor(0xFFFF);M5.Display.setTextSize(1);
+    uint16_t face=shift?0x580B:(isOp?0x038E:0x19C7);
+    uint16_t hi=shift?0xA81F:(isOp?0x04D1:0x3A8A);
+    uint16_t lo=shift?0x3006:(isOp?0x01C6:0x0C63);
+    M5.Display.fillRoundRect(x,y,76,20,4,face);
+    M5.Display.drawFastHLine(x+2,y+1,72,hi);
+    M5.Display.drawFastHLine(x+2,y+18,72,lo);
+    M5.Display.setTextColor(shift?0xAF27:0xFFFF);M5.Display.setTextSize(1);
     const char*lab=shift?secs[i]:nums[i];
     int tw=M5.Display.textWidth(lab);M5.Display.setCursor(x+(76-tw)/2,y+4);M5.Display.print(lab);
   }
-  M5.Display.fillRect(0,BAR_Y,W,H-BAR_Y,0x18C3);
-  M5.Display.drawFastHLine(0,BAR_Y,W,0x4A69);
+  M5.Display.fillRect(0,BAR_Y,W,H-BAR_Y,0x0C63);
+  M5.Display.drawFastHLine(0,BAR_Y,W,0x038E);
   M5.Display.setTextColor(0xFFFF);M5.Display.setTextSize(1);
-  M5.Display.fillRoundRect(8,BAR_Y+4,60,16,3,0x2A4A);
+  M5.Display.fillRoundRect(8,BAR_Y+4,60,16,4,0x19C7);
+  M5.Display.drawFastHLine(10,BAR_Y+5,56,0x3A8A);
   M5.Display.setCursor(22,BAR_Y+7);M5.Display.print("< A");
-  M5.Display.fillRoundRect(130,BAR_Y+4,60,16,3,shift?0xFD20:0x2A4A);
+  M5.Display.fillRoundRect(130,BAR_Y+4,60,16,4,shift?0x580B:0x19C7);
+  M5.Display.drawFastHLine(132,BAR_Y+5,56,shift?0xA81F:0x3A8A);
+  M5.Display.setTextColor(shift?0xAF27:0xFFFF);
   M5.Display.setCursor(140,BAR_Y+7);M5.Display.print(shift?"2ND*":"B 2ND");
-  M5.Display.fillRoundRect(252,BAR_Y+4,60,16,3,0x2A4A);
+  M5.Display.setTextColor(0xFFFF);
+  M5.Display.fillRoundRect(252,BAR_Y+4,60,16,4,0x19C7);
+  M5.Display.drawFastHLine(254,BAR_Y+5,56,0x3A8A);
   M5.Display.setCursor(266,BAR_Y+7);M5.Display.print("C >");
 }
 static void touch(){

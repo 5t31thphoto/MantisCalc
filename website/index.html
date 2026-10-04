@@ -3,24 +3,67 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>MantisCalculator</title>
+  <title>MantisCalc — The Ultimate Calculator</title>
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./assets/logo.jpeg">
   <script type="module" src="https://unpkg.com/esp-web-tools@10.1.1/dist/web/install-button.js?module"></script>
   <style>
-    body{font-family:system-ui,sans-serif;background:#101318;color:#eee;max-width:720px;margin:40px auto;padding:20px;line-height:1.5}
-    h1{margin:0 0 8px;font-size:1.6rem}
-    .tag{display:inline-block;background:#FD20;color:#111;font-weight:700;font-size:12px;padding:2px 8px;border-radius:4px;margin-left:8px;vertical-align:middle}
-    button,.btn{font-size:18px;padding:12px 20px;border-radius:8px;border:0;background:#39E7;color:#041018;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block}
-    button:hover,.btn:hover{filter:brightness(1.1)}
-    .btn-secondary{background:#2a3340;color:#eee;border:1px solid #4a5568}
-    code{background:#222;padding:2px 6px;border-radius:4px}
-    .card{background:#1a1f28;border:1px solid #2a3340;border-radius:10px;padding:16px 18px;margin:18px 0}
-    a{color:#7BE}
+    :root{
+      --teal:#007373;
+      --purple:#5d005d;
+      --lime:#c4e000;
+      --bg:#0a1616;
+      --card:#122222;
+      --text:#e8f0f0;
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family:system-ui,-apple-system,sans-serif;
+      background:var(--bg);color:var(--text);
+      max-width:760px;margin:0 auto;padding:28px 20px 48px;line-height:1.55;
+    }
+    .hero{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+    .hero img{
+      width:120px;height:120px;object-fit:cover;border-radius:22px;
+      box-shadow:0 8px 24px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.15);
+      border:2px solid #2a4a4a;
+    }
+    h1{margin:0;font-size:1.75rem;letter-spacing:.02em}
+    h1 span.brand{color:var(--lime)}
+    .tagline{margin:4px 0 0;font-size:14px;color:#8ab;font-weight:600;letter-spacing:.04em}
+    .tagline b{color:var(--lime);font-weight:700}
+    .card{
+      background:var(--card);border:1px solid #1e3a3a;border-radius:14px;
+      padding:18px 20px;margin:18px 0;
+      box-shadow:0 4px 16px rgba(0,0,0,.3);
+    }
     .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+    button,.btn{
+      font-size:17px;padding:12px 22px;border-radius:10px;border:0;
+      font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;
+      box-shadow:0 3px 0 #004040, 0 4px 12px rgba(0,0,0,.35);
+      transition:transform .08s, box-shadow .08s;
+    }
+    button,.btn-primary{background:linear-gradient(180deg,#00a0a0,var(--teal));color:#fff}
+    .btn-secondary{background:linear-gradient(180deg,#7a1a7a,var(--purple));color:#fff;box-shadow:0 3px 0 #3a003a, 0 4px 12px rgba(0,0,0,.35)}
+    button:hover,.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+    button:active,.btn:active{transform:translateY(2px);box-shadow:0 1px 0 #004040}
+    code{background:#0d1c1c;padding:2px 7px;border-radius:5px;color:var(--lime)}
+    pre{background:#071212;padding:12px;border-radius:8px;overflow:auto;font-size:13px;margin:10px 0 0;border:1px solid #1a3333}
+    a{color:#5dcece}
+    .swatches{display:flex;gap:8px;margin-top:10px}
+    .swatch{width:28px;height:28px;border-radius:6px;border:1px solid #fff3}
   </style>
 </head>
 <body>
-  <h1>MantisCalculator <span class="tag">Core2</span></h1>
-  <p>Deterministic engineering / trades calculator for the M5Stack Core2. Built on GitHub Actions.</p>
+  <div class="hero">
+    <img src="./assets/logo.jpeg" alt="MantisCalc logo" width="120" height="120">
+    <div>
+      <h1>MANTIS<span class="brand">CALC</span></h1>
+      <p class="tagline">THE ULTIMATE <b>CALCULATOR</b></p>
+      <p style="margin:8px 0 0;opacity:.85;font-size:15px">Engineering &amp; trades multitool for M5Stack Core2. Built on GitHub Actions.</p>
+    </div>
+  </div>
 
   <div class="card">
     <div class="row">
@@ -29,14 +72,23 @@
       </esp-web-install-button>
       <a class="btn btn-secondary" href="./firmware/MantisCalculator.bin" download="MantisCalculator.bin">Download merged .bin</a>
     </div>
-    <p style="margin:12px 0 0;opacity:.85;font-size:14px">
-      USB install flashes from the browser. The download is the same full 16&nbsp;MB merged image hosted on this site after each successful build.
+    <p style="margin:14px 0 0;opacity:.85;font-size:14px">
+      USB install flashes from the browser. Download is the full 16&nbsp;MB merged image published with each successful Actions build.
     </p>
   </div>
 
   <div class="card">
     <strong>Manual flash</strong>
-    <pre style="background:#0d1016;padding:10px;border-radius:6px;overflow:auto;font-size:13px;margin:10px 0 0">esptool.py --chip esp32 write_flash 0x0 MantisCalculator.bin</pre>
+    <pre>esptool.py --chip esp32 write_flash 0x0 MantisCalculator.bin</pre>
+  </div>
+
+  <div class="card" style="font-size:13px;opacity:.9">
+    Brand
+    <div class="swatches">
+      <div class="swatch" style="background:#007373" title="#007373"></div>
+      <div class="swatch" style="background:#5d005d" title="#5d005d"></div>
+      <div class="swatch" style="background:#c4e000" title="#c4e000"></div>
+    </div>
   </div>
 </body>
 </html>
