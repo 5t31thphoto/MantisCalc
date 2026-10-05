@@ -20,7 +20,7 @@ When **2ND** is on, the header shows a purple **2ND** badge and keys show their 
 
 **Pages (A/C):** MATH → ELEC → MECH/RF → BUILD → KITCHEN → MONEY → …
 
-**On-device guide:** 2ND + tap header. Scroll upper/lower half. Exit bottom bar / B / CLR.
+**On-device guide:** 2ND + tap header. Full screen. **A** prev / **C** next guide page, **B** exit. Labels above the buttons.
 
 **Register flags** (header right): green pills **V A R P C L f d** appear when those registers are set.
 
@@ -56,7 +56,15 @@ Operators use **ASCII** `+` `-` `*` `/` `=` so they always render correctly on t
 
 ---
 
-## 3. How unit stamping works
+## 3. Wizard pattern (preferred for multi-input tools)
+
+Type a number → press the tool key → header shows the step name → repeat until the result.
+
+Examples: **OHM/PWR** `V → A → ohm/W` · **VDROP** `V → A → ft → awg → drop` · **PMT** `PV → APR → mo → pay` · **PAINT** `perim → ht → doors → wins → coats → cov → gal` · **BAKE** `flour → hydr% → water`
+
+Unit-stamp keys (VOLTS, AMPS, …) still work; if registers are already filled, some tools solve immediately.
+
+## 3b. How unit stamping works
 
 1. Type a number.  
 2. Press a **unit key** (e.g. VOLTS). That stores the value in a named register and stamps its unit.  

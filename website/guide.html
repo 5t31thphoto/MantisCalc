@@ -74,7 +74,8 @@ a{color:#5dcece}
 <tr><td>Number pad</td><td>Digits and <code>+ - * / =</code> always available</td></tr>
 </table>
 <p class="note">Pages cycle: <b>MATH → ELEC → MECH/RF → BUILD → KITCHEN → MONEY</b> (scientific first). Header shows page name, optional <span class="key key2">2ND</span> badge, step tag, and Al wire mode.</p>
-<p class="note"><b>On-device guide:</b> latch <span class="key key2">2ND</span>, then tap the <b>header</b> (top bar). Scroll by tapping upper/lower half of the screen. Exit via the bottom bar, B, or CLR. Header shows <code>hdr=HELP</code> while 2ND is on.</p>
+<p class="note"><b>On-device guide:</b> latch <span class="key key2">2ND</span>, then tap the <b>header</b>. Full-screen guide: <b>A</b> previous page, <b>C</b> next page, <b>B</b> exit to calculator. Labels sit above the physical buttons.</p>
+<p class="note"><b>Wizards:</b> Multi-input tools work like a normal calculator — type a number, press the tool key, header shows the step (<code>V</code>, <code>A</code>, <code>perim</code>, …). Repeat until the result. Unit-stamp keys still work if you prefer.</p>
 <p class="note"><b>Stamp a unit:</b> type a number, press a unit key (e.g. VOLTS). That value is stored in a register. Solvers read set registers and compute the missing piece.</p>
 </div>
 
@@ -158,7 +159,7 @@ a{color:#5dcece}
 <tr><td><span class="key">ROOF</span></td><td>Rafter length + pitch tape</td><td>Hypotenuse only</td></tr>
 <tr><td><span class="key">STAIRS</span></td><td>Stringer length + riser count</td><td>Count = floor(rise/7.5)</td></tr>
 <tr><td><span class="key">BOARD</span></td><td>Board-feet T×W×L/12</td><td>+10% waste</td></tr>
-<tr><td><span class="key">PAINT</span></td><td>Net wall area then gallons</td><td>Rect area</td></tr>
+<tr><td><span class="key">PAINT</span></td><td>Wizard: perim→ht→doors→wins→coats→cov→gal</td><td>Rect area</td></tr>
 <tr><td><span class="key">CONC</span></td><td>ft³ → yd³ + 10% waste</td><td>Convert</td></tr>
 <tr><td><span class="key">TRIG</span></td><td>Cycle sin/cos/tan (degrees)</td><td>arcsin</td></tr>
 </table>
@@ -224,34 +225,31 @@ a{color:#5dcece}
 <h4>Example A — Ohm’s law &amp; power</h4>
 <p>Find R and P for 120 V at 15 A.</p>
 <div class="step">
-<span class="n">1.</span> Go to ELEC (A/C)<br>
-<span class="n">2.</span> <code>120</code> → <span class="key">VOLTS</span><br>
-<span class="n">3.</span> <code>15</code> → <span class="key">AMPS</span><br>
-<span class="n">4.</span> <span class="key">OHM/PWR</span> → <b>8 ohm</b><br>
-<span class="n">5.</span> <span class="key">OHM/PWR</span> again → <b>1800 W</b>
+<span class="n">1.</span> ELEC page<br>
+<span class="n">2.</span> <code>120</code> <span class="key">OHM/PWR</span> → header <b>V</b><br>
+<span class="n">3.</span> <code>15</code> <span class="key">OHM/PWR</span> → header <b>A</b><br>
+<span class="n">4.</span> <span class="key">OHM/PWR</span> → <b>8 ohm</b>, tape <b>1800 W</b>
 </div>
 </div>
 
 <div class="example">
 <h4>Example B — Voltage drop &amp; wire size</h4>
-<p>120 V circuit, 15 A, 75 ft one-way, copper. What’s the drop on 14 AWG? What gauge for ≤3%?</p>
+<p>120 V, 15 A, 75 ft one-way, 14 AWG copper.</p>
 <div class="step">
-<span class="n">1.</span> ELEC · ensure copper (header must not show Al; <span class="key">CONV</span> 2ND toggles)<br>
-<span class="n">2.</span> <code>120</code> <span class="key">VOLTS</span> · <code>15</code> <span class="key">AMPS</span> · <code>75</code> <span class="key">DIST</span><br>
-<span class="n">3.</span> <code>14</code> <span class="key">AWG</span> (optional stamp)<br>
-<span class="n">4.</span> <span class="key">VDROP</span> → ~<b>7.07 V</b><br>
-<span class="n">5.</span> <span class="key">VDROP</span> → ~<b>5.9%</b><br>
-<span class="n">6.</span> <span class="key">VDROP</span> → required AWG ≈ <b>10–11</b> for 3%
+<span class="n">1.</span> ELEC · copper mode (2ND <span class="key">CONV</span> toggles Al)<br>
+<span class="n">2.</span> <code>120</code> <span class="key">VDROP</span> → <b>Vsrc</b> · <code>15</code> <span class="key">VDROP</span> → <b>A</b><br>
+<span class="n">3.</span> <code>75</code> <span class="key">VDROP</span> → <b>ft</b> · <code>14</code> <span class="key">VDROP</span> → <b>awg</b><br>
+<span class="n">4.</span> <span class="key">VDROP</span> → drop ~<b>7.07 V</b>, tape % and AWG for 3%
 </div>
 </div>
 
 <div class="example">
 <h4>Example C — RC low-pass filter</h4>
-<p>R = 100 Ω, C = 1 µF. Find cutoff frequency.</p>
+<p>R = 100 Ω, C = 1e-6 F. Find cutoff.</p>
 <div class="step">
-<span class="n">1.</span> <code>100</code> <span class="key">OHMS</span><br>
-<span class="n">2.</span> <code>1</code> then <span class="key key2">2ND</span> <span class="key">FARAD</span> (uF) — or enter 1e-6 and FARAD<br>
-<span class="n">3.</span> <span class="key">FILT</span> → <b>fc ≈ 1591.5 Hz</b> (τ also taped)
+<span class="n">1.</span> <code>100</code> <span class="key">FILT</span> → <b>R</b><br>
+<span class="n">2.</span> <code>1e-6</code> <span class="key">FILT</span> → <b>C</b><br>
+<span class="n">3.</span> <span class="key">FILT</span> → <b>fc ≈ 1591.5 Hz</b> (tau taped)
 </div>
 </div>
 
@@ -259,11 +257,10 @@ a{color:#5dcece}
 <h4>Example D — Mortgage payment</h4>
 <p>$100,000 at 5% for 30 years.</p>
 <div class="step">
-<span class="n">1.</span> MONEY page<br>
-<span class="n">2.</span> <code>100000</code> <span class="key">PRINC</span><br>
-<span class="n">3.</span> <code>5</code> <span class="key">RATE%</span><br>
-<span class="n">4.</span> <code>360</code> <span class="key">TERM</span><br>
-<span class="n">5.</span> <span class="key">PMT</span> → <b>≈ $536.82</b> (total interest also taped)
+<span class="n">1.</span> MONEY · <code>100000</code> <span class="key">PMT</span> → <b>PV</b><br>
+<span class="n">2.</span> <code>5</code> <span class="key">PMT</span> → <b>APR%</b><br>
+<span class="n">3.</span> <code>360</code> <span class="key">PMT</span> → <b>mo</b><br>
+<span class="n">4.</span> <span class="key">PMT</span> → <b>≈ $536.82</b> (interest taped)
 </div>
 </div>
 
@@ -271,20 +268,22 @@ a{color:#5dcece}
 <h4>Example E — Roof pitch &amp; rafter</h4>
 <p>Rise 12 ft, run 16 ft.</p>
 <div class="step">
-<span class="n">1.</span> BUILD · <code>12</code> <span class="key">RISE</span> · <code>16</code> <span class="key">RUN</span><br>
-<span class="n">2.</span> <span class="key">SLOPE</span> → 0.75 · again → <b>≈36.87°</b> · again → <b>75%</b><br>
-<span class="n">3.</span> <span class="key">ROOF</span> → rafter length <b>20 ft</b>
+<span class="n">1.</span> BUILD · <code>12</code> <span class="key">SLOPE</span> → <b>rise</b> · <code>16</code> <span class="key">SLOPE</span> → <b>run</b><br>
+<span class="n">2.</span> <span class="key">SLOPE</span> → ratio, angle, % on tape<br>
+<span class="n">3.</span> <code>12</code> <span class="key">ROOF</span> · <code>16</code> <span class="key">ROOF</span> · <span class="key">ROOF</span> → <b>20 ft</b>
 </div>
 </div>
 
 <div class="example">
 <h4>Example F — Room paint quantity</h4>
-<p>12×12 room, 8 ft ceiling, 1 door, 2 windows, 2 coats.</p>
+<p>12×12 room, 8 ft ceiling, 1 door, 2 windows, 2 coats, 350 ft²/gal coverage.</p>
 <div class="step">
-<span class="n">1.</span> Perimeter = 48 → <code>48</code> <span class="key">RISE</span> · <code>8</code> <span class="key">RUN</span><br>
-<span class="n">2.</span> <code>1</code> <span class="key">DIST</span> (doors) · <code>2</code> <span class="key">ANGLE</span> (windows)<br>
-<span class="n">3.</span> <span class="key">PAINT</span> → net <b>333 ft²</b><br>
-<span class="n">4.</span> <code>2</code> <span class="key">TOTAL</span> (coats) · <span class="key">PAINT</span> → ~<b>1.90 gal</b> (buy 2)
+<span class="n">1.</span> BUILD page · enter each value then press <span class="key">PAINT</span> (wizard steps shown in header):<br>
+<span class="n">2.</span> <code>48</code> <span class="key">PAINT</span> → <b>perim</b><br>
+<span class="n">3.</span> <code>8</code> <span class="key">PAINT</span> → <b>ht</b><br>
+<span class="n">4.</span> <code>1</code> <span class="key">PAINT</span> → <b>doors</b> · <code>2</code> <span class="key">PAINT</span> → <b>wins</b><br>
+<span class="n">5.</span> <code>2</code> <span class="key">PAINT</span> → <b>coats</b> · <code>350</code> <span class="key">PAINT</span> → <b>cov</b><br>
+<span class="n">6.</span> <span class="key">PAINT</span> again → net <b>333 ft²</b>, ~<b>1.90 gal</b> (buy 2)
 </div>
 </div>
 
@@ -292,8 +291,9 @@ a{color:#5dcece}
 <h4>Example G — Baker’s hydration water</h4>
 <p>1000 g flour at 65% hydration.</p>
 <div class="step">
-<span class="n">1.</span> KITCHEN · <code>1000</code> <span class="key">FLOUR</span> · <code>65</code> <span class="key">HYDR%</span><br>
-<span class="n">2.</span> <span class="key key2">2ND</span> <span class="key">HYDR%</span> (or BAKE step) → <b>650 g water</b>
+<span class="n">1.</span> KITCHEN · <code>1000</code> <span class="key">BAKE</span> → <b>flour</b><br>
+<span class="n">2.</span> <code>65</code> <span class="key">BAKE</span> → <b>hydr%</b><br>
+<span class="n">3.</span> <span class="key">BAKE</span> → <b>650 g water</b>
 </div>
 </div>
 

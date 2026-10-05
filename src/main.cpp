@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include "logo_rgb565.h"
 
-// MantisCalculator v1.5.2 — full multitool. Dense. Agent-maintained.
+// MantisCalculator v1.5.7 — full multitool. Dense. Agent-maintained.
 // A/C=pages B=2nd. Stamp units → solvers. No menus. No long-press.
 // === SECTIONS: consts | regs | keys | core | unit | elec | mech | build | kit | money | math | ui ===
 
@@ -37,17 +37,17 @@ static bool helpMode=false;static int helpScroll=0;
 // On-device guide (2ND + tap header). ASCII only.
 static const char* helpText[6][14]={
  // MATH
- {"MATH — scientific","x^2 / sqrt  square/root","1/x  reciprocal","LOG 10^x  LN e^x","SIN COS TAN  degrees","FRAC  best a/b fraction","ENG  engineering fmt","STAT  add sample","2ND STAT  min max avg","2ND num: pi e % ^ BS","CLR MR MS MC ANS EE","Stamp nothing — pure math","Examples: 0.375 FRAC=3/8","pi FRAC ~ 355/113"},
+ {"MATH — scientific","Normal calculator first","x^2 sqrt 1/x LOG LN","SIN COS TAN degrees","FRAC best fraction a/b","ENG engineering display","STAT add sample / min max","2ND num: pi e % ^ BS CLR","Memory: MR MS MC ANS EE","Enter number, press key","", "", "", ""},
  // ELEC
- {"ELEC — electrical","Stamp VOLTS AMPS OHMS","WATTS FARAD Hz DIST","OHM/PWR  solve V/I/R/P","  press again for power","VDROP  drop % req AWG","  needs V A DIST(ft)","FILT  RC fc and tau","AWG  gauge or recommend","dB / PF  log power factor","2ND FARAD=uF OHMS=kOhm","2ND Hz=wavelength","Al/Cu: 2ND CONV toggle","Ex: 120V 15A OHM/PWR"},
+ {"ELEC — electrical","Press tool first to queue","OHM/PWR: V -> A -> R,P","FILT: R -> C -> fc,tau","VDROP: V A ft awg -> drop","  header shows step name","Unit keys still stamp","VOLTS AMPS OHMS etc","AWG: gauge or recommend","2ND: mV mA kOhm uF wave","Al/Cu: 2ND CONV toggle","Ex: 120 OHM/PWR 15 OHM/PWR","  -> 8 ohm 1800 W", ""},
  // MECH
- {"MECH/RF — motors RF","KV CELLS RPM THRUST","WEIGHT RATIO PROP GEAR","BAT Wh  MOTOR rpm","FREQ WAVE wavelength","PROP needs KV cells diam","MOTOR: KV*S*4.2 = RPM","BAT: mAh*S*3.7/1000 Wh","2ND: unit converts lb kg","GEAR 2ND: power from t*w","First-order estimates only","", "", ""},
+ {"MECH/RF — motors","MOTOR: KV -> S -> RPM","PROP: KV S diam pitch mph","BAT: mAh -> S -> Wh","Enter value, press key","each time for next step","FREQ WAVE wavelength","RATIO GEAR helpers","", "", "", "", "", ""},
  // BUILD
- {"BUILD — trades","RISE RUN SLOPE ANGLE","AREA VOL ROOF STAIRS","BOARD PAINT CONC TRIG","SLOPE: ratio ang percent","ROOF: rafter length","PAINT: RISE=perim RUN=h","  DIST=doors ANGLE=wins","  then coats in TOTAL","BOARD: T*W*L/12 board-ft","CONC: ft3 to yd3 +10%","TRIG: sin cos tan cycle","Ex: 12 rise 16 run ROOF","=20 ft rafter"},
+ {"BUILD — trades","SLOPE: rise -> run -> %","ROOF: rise -> run -> len","BOARD: T W L -> board-ft","PAINT: perim ht doors","  wins coats cov -> gal","CONC: volume -> yd3","TRIG sin cos tan cycle","Ex paint: 48 PAINT 8 PAINT","1 PAINT 2 PAINT 2 PAINT","350 PAINT PAINT -> gal", "", "", ""},
  // KITCHEN
- {"KITCHEN — baking","FLOUR TOTAL HYDR% SERV","TEMP PRICE BAKE RECIPE","CONV volume chain","  cup tbsp tsp mL L gal","HYDR% 2ND: water grams","BAKE steps baker math","TEMP 2ND stamps F","Scale: TOTAL/SERV","", "", "", "", ""},
+ {"KITCHEN — baking","BAKE: flour -> hydr% -> H2O","CONV: cup tbsp tsp mL L","TEMP stamps C / 2ND F","RECIPE scale per serving","Enter then press BAKE", "", "", "", "", "", "", "", ""},
  // MONEY
- {"MONEY — loans","PRINC RATE% TERM PMT","INT SAV PAYOFF AMORT","PMT needs P rate months","Ex: 100000 5% 360 PMT","  ~536.82 /mo","AMORT: step bal each mo","PAYOFF: months w/ extra","SAV: compound FV","PRINC 2ND: present value","", "", "", ""}
+ {"MONEY — loans","PMT wizard:","  PV -> APR% -> months","  -> payment + interest","Ex: 100000 PMT","  5 PMT  360 PMT  PMT","  -> ~536.82","AMORT steps balance","PAYOFF months to clear","", "", "", "", ""}
 };
 
 static const char* stepTag=""; // shown in header when sequential active
@@ -82,7 +82,7 @@ static Key pages[6][12]={
  {{"KV","RPM",A_KV,A_RPM},{"CELLS","xV",A_CELLS,A_CONVERT},{"RPM","rps",A_RPM,A_CONVERT},{"THRUST","lb",A_THRUST,A_CONVERT},{"WEIGHT","kg",A_WEIGHT,A_CONVERT},{"RATIO","gear",A_RATIO,A_GEAR},
   {"PROP","mph",A_PROP,A_SPEED},{"GEAR","Pwr",A_GEAR,A_TORQUEPOWER},{"FREQ","wave",A_HZ,A_WAVELEN},{"WAVE","ft",A_WAVELEN,A_CONVERT},{"BAT","Wh",A_BATTERY,A_BATTERYWH},{"MOTOR","torq",A_MOTOR,A_TORQUE}},
  {{"RISE","slope",A_RISE,A_SLOPE},{"RUN","ang",A_RUN,A_ANGLE_SOLVE},{"SLOPE","ang",A_SLOPE,A_ANGLE_SOLVE},{"ANGLE","rise",A_ANGLE,A_RISE_FROM_ANGLE},{"AREA","circ",A_AREA,A_CIRCLEAREA},{"VOL","cyl",A_VOLUME,A_CYLVOL},
-  {"ROOF","hyp",A_ROOF,A_PYTH},{"STAIRS","#",A_STAIRS,A_STAIRCOUNT},{"BOARD","+10%",A_BOARD,A_MATERIALWASTE},{"PAINT","net",A_PAINT,A_RECTAREA},{"CONC","yd3",A_CONCRETE,A_CONVERT},{"TRIG","inv",A_TRIG,A_ASIN}},
+  {"ROOF","hyp",A_ROOF,A_PYTH},{"STAIRS","#",A_STAIRS,A_STAIRCOUNT},{"BOARD","+10%",A_BOARD,A_MATERIALWASTE},{"PAINT","step",A_PAINT,A_RECTAREA},{"CONC","yd3",A_CONCRETE,A_CONVERT},{"TRIG","inv",A_TRIG,A_ASIN}},
  {{"FLOUR","%",A_FLOUR,A_RECIPEPCT},{"TOTAL","/serv",A_TOTAL,A_SERV},{"HYDR%","H2O",A_HYDR,A_HYDRWATER},{"SERV","dens",A_SERV,A_DENSITY},{"TEMP","F",A_TEMP,A_TEMPF},{"PRICE","x",A_PRICE,A_TOTAL},
   {"BAKE","next",A_BAKE,A_HYDRWATER},{"RECIPE","scale",A_RECIPE,A_RECIPEPCT},{"DENS","g/cup",A_DENSITY,A_CONVERT},{"CONV","chain",A_CONVERT,A_SIPREFIX},{"AREA","pan",A_AREA,A_PANROUND},{"VOL","pan",A_VOLUME,A_CYLVOL}},
  {{"PRINC","PV",A_PRINC,A_PRESENT},{"RATE%","I/mo",A_RATE,A_INTEREST},{"TERM","n mo",A_TERM,A_PAYMONTHS},{"PMT","solve",A_LOAN,A_AMORT},{"INT","total",A_INTEREST,A_LOAN},{"SAV","FV",A_COMPOUND,A_FV},
@@ -206,35 +206,44 @@ static void toFraction(){
   char b[48];snprintf(b,48,"%ld/%ld",num,bd);tapeAdd(b);setEntry((double)num/(double)bd);
 }
 
-// === ELEC ===
-// TEST: 120V 15A → R=8Ω P=1800W
 static void ohmPwr(){
-  stepOhm=(stepOhm%4)+1;stepTag="Ohm";
-  double V=reg.v.x,I=reg.a.x,R=reg.r.x,P=reg.p.x;
-  if(stepOhm==1){if(reg.v.set&&reg.a.set)setReg(reg.r,V/I,U_OHM);else if(reg.v.set&&reg.r.set)setReg(reg.a,V/R,U_A);else if(reg.a.set&&reg.r.set)setReg(reg.v,I*R,U_V);else if(reg.v.set&&reg.p.set)setReg(reg.a,P/V,U_A);else{beep();stepOhm=0;}}
-  else if(stepOhm==2){if(reg.v.set&&reg.a.set)setReg(reg.p,V*I,U_W);else if(reg.v.set&&reg.r.set)setReg(reg.p,V*V/R,U_W);else if(reg.a.set&&reg.r.set)setReg(reg.p,I*I*R,U_W);else{beep();stepOhm=0;}}
-  else if(stepOhm==3){if(reg.p.set&&reg.v.set)setReg(reg.r,V*V/P,U_OHM);else if(reg.p.set&&reg.a.set)setReg(reg.r,P/(I*I),U_OHM);else{beep();stepOhm=0;}}
-  else{if(reg.p.set&&reg.r.set)setReg(reg.v,sqrt(P*R),U_V);else if(reg.p.set&&reg.v.set)setReg(reg.a,P/V,U_A);else{beep();stepOhm=0;}}
+  if(stepOhm==0&&reg.v.set&&reg.a.set){setReg(reg.r,reg.v.x/reg.a.x,U_OHM);setReg(reg.p,reg.v.x*reg.a.x,U_W);stepTag="Ohm";return;}
+  if(stepOhm==0&&reg.v.set&&reg.r.set){setReg(reg.a,reg.v.x/reg.r.x,U_A);setReg(reg.p,reg.v.x*reg.v.x/reg.r.x,U_W);stepTag="Ohm";return;}
+  if(stepOhm==0&&reg.a.set&&reg.r.set){setReg(reg.v,reg.a.x*reg.r.x,U_V);setReg(reg.p,reg.a.x*reg.a.x*reg.r.x,U_W);stepTag="Ohm";return;}
+  if(stepOhm==0){stepOhm=1;stepTag="V?";tapeAdd("enter V");return;}
+  double x=curValue();
+  if(stepOhm==1){wV=x;reg.v.x=x;reg.v.u=U_V;reg.v.set=true;stepTag="A?";tapeVal("V",x,U_V);stepOhm=2;entering=false;}
+  else if(stepOhm==2){wA=x;reg.a.x=x;reg.a.u=U_A;reg.a.set=true;double R=wA!=0?wV/wA:NAN,P=wV*wA;
+    reg.r.x=R;reg.r.u=U_OHM;reg.r.set=true;reg.p.x=P;reg.p.u=U_W;reg.p.set=true;
+    setReg(reg.answer,R,U_OHM);tapeVal("P",P,U_W);stepTag="ohm";stepOhm=0;}
 }
-// TEST: R=100 C=1µF → fc≈1591.5Hz
+
 static void filt(){
-  stepFilt=(stepFilt%3)+1;stepTag="FILT";
-  if(!need(reg.r)||!need(reg.c)){stepFilt=0;return;}
-  double R=reg.r.x,C=reg.c.x;
-  if(stepFilt==1){setReg(reg.hz,1/(2*PI_D*R*C),U_HZ);tapeVal("tau",R*C,U_NONE);}
-  else if(stepFilt==2)setReg(reg.answer,R*C,U_NONE);
-  else setReg(reg.answer,0.69314718056*R*C,U_NONE);
+  if(stepFilt==0&&reg.r.set&&reg.c.set){double R=reg.r.x,C=reg.c.x;setReg(reg.hz,1/(2*PI_D*R*C),U_HZ);tapeVal("tau",R*C,U_NONE);stepTag="fc";return;}
+  if(stepFilt==0){stepFilt=1;stepTag="R?";tapeAdd("enter R");return;}
+  double x=curValue();
+  if(stepFilt==1){wR=x;reg.r.x=x;reg.r.u=U_OHM;reg.r.set=true;stepTag="C?";tapeVal("R",x,U_OHM);stepFilt=2;entering=false;}
+  else if(stepFilt==2){wC=x;reg.c.x=x;reg.c.u=U_F;reg.c.set=true;
+    setReg(reg.hz,1/(2*PI_D*wR*wC),U_HZ);tapeVal("tau",wR*wC,U_NONE);stepTag="fc";stepFilt=0;}
 }
-// TEST: 120V 15A 75ft 14AWG → 7.07V 5.89% req≈10
+
 static void vdrop(){
-  stepVD=(stepVD%4)+1;stepTag=useAl?"VDAl":"VDCu";
-  if(!need(reg.v)||!need(reg.a)||!need(reg.dist)){stepVD=0;return;}
-  int awg=12;if(reg.answer.set&&reg.answer.u==U_AWG)awg=(int)reg.answer.x;
-  if(stepVD==1)setReg(reg.answer,wireDrop(reg.a.x,reg.dist.x,awg),U_V);
-  else if(stepVD==2){double d=wireDrop(reg.a.x,reg.dist.x,awg);setReg(reg.answer,100*d/reg.v.x,U_PCT);}
-  else if(stepVD==3){int n=awgFor(reg.a.x,reg.dist.x,reg.v.x,3);setReg(reg.answer,(double)n,U_AWG);tapeVal("DROP",wireDrop(reg.a.x,reg.dist.x,n),U_V);}
-  else{int n=awgFor(reg.a.x,reg.dist.x,reg.v.x,1);setReg(reg.answer,(double)n,U_AWG);}
+  if(stepVD==0&&reg.v.set&&reg.a.set&&reg.dist.set){
+    int awg=12;if(reg.answer.set&&reg.answer.u==U_AWG)awg=(int)reg.answer.x;
+    double d=wireDrop(reg.a.x,reg.dist.x,awg);setReg(reg.answer,d,U_V);
+    tapeVal("pct",100*d/reg.v.x,U_PCT);tapeVal("AWG3%",(double)awgFor(reg.a.x,reg.dist.x,reg.v.x,3),U_AWG);
+    stepTag=useAl?"Al":"Cu";return;
+  }
+  if(stepVD==0){stepVD=1;stepTag="Vsrc?";tapeAdd("enter Vsrc");return;}
+  double x=curValue();
+  if(stepVD==1){wV=x;reg.v.x=x;reg.v.u=U_V;reg.v.set=true;stepTag="A?";tapeVal("V",x,U_V);stepVD=2;entering=false;}
+  else if(stepVD==2){wA=x;reg.a.x=x;reg.a.u=U_A;reg.a.set=true;stepTag="ft?";tapeVal("A",x,U_A);stepVD=3;entering=false;}
+  else if(stepVD==3){wDist=x;reg.dist.x=x;reg.dist.u=U_FT;reg.dist.set=true;stepTag="awg?";tapeVal("ft",x,U_FT);stepVD=4;entering=false;}
+  else if(stepVD==4){wAwg=(x>=0&&x<=40)?x:12;double d=wireDrop(wA,wDist,(int)wAwg);
+    setReg(reg.answer,d,U_V);tapeVal("pct",wV>0?100*d/wV:NAN,U_PCT);
+    tapeVal("AWG3%",(double)awgFor(wA,wDist,wV,3),U_AWG);stepTag="drop";stepVD=0;}
 }
+
 static void awgKey(){
   if(need(reg.a)&&need(reg.dist)&&need(reg.v)){int n=awgFor(reg.a.x,reg.dist.x,reg.v.x,3);setReg(reg.answer,(double)n,U_AWG);tapeVal("DROP",wireDrop(reg.a.x,reg.dist.x,n),U_V);}
   else{int n=(int)round(curValue());if(n>=0&&n<=40){setReg(reg.answer,(double)n,U_AWG);tapeVal("cmil",awgCm[n],U_CMIL);}}
@@ -252,43 +261,114 @@ static void seriesC(){if(need(reg.c)&&need(reg.answer))setReg(reg.answer,1.0/(1/
 static void parallelC(){if(need(reg.c)&&need(reg.answer))setReg(reg.answer,reg.c.x+reg.answer.x,U_F);}
 static void capEnergy(){if(need(reg.c)&&need(reg.v))setReg(reg.answer,0.5*reg.c.x*reg.v.x*reg.v.x,U_W);}
 
-// === MECH ===
-static void motor(){if(!need(reg.kv)||!need(reg.cells))return;setReg(reg.rpm,reg.kv.x*reg.cells.x*4.2,U_RPM);}
+static void motor(){
+  static uint8_t st=0;
+  if(st==0&&reg.kv.set&&reg.cells.set){setReg(reg.rpm,reg.kv.x*reg.cells.x*4.2,U_RPM);stepTag="RPM";return;}
+  if(st==0){st=1;stepTag="KV?";tapeAdd("enter KV");return;}
+  double x=curValue();
+  if(st==1){wKv=x;reg.kv.x=x;reg.kv.u=U_KV;reg.kv.set=true;stepTag="S?";st=2;entering=false;}
+  else if(st==2){wCells=x;reg.cells.x=x;reg.cells.u=U_CELL;reg.cells.set=true;setReg(reg.rpm,wKv*wCells*4.2,U_RPM);stepTag="RPM";st=0;}
+}
+
 static void gear(){if(!need(reg.ratio))return;if(reg.rpm.set)setReg(reg.answer,reg.rpm.x/reg.ratio.x,U_RPM);else if(reg.torque.set)setReg(reg.answer,reg.torque.x*reg.ratio.x,U_NONE);}
-static void prop(){if(!need(reg.kv)||!need(reg.cells)||!need(reg.diameter))return;double rpm=reg.kv.x*reg.cells.x*4.2;double pitch=reg.pitch.set?reg.pitch.x:reg.diameter.x;reg.rpm.x=rpm;reg.rpm.u=U_RPM;reg.rpm.set=true;setReg(reg.answer,rpm*pitch*60/63360.0,U_NONE);tapeVal("RPM",rpm,U_RPM);}
-static void battery(){if(need(reg.capacity)&&need(reg.cells))setReg(reg.energy,reg.capacity.x*reg.cells.x*3.7/1000.0,U_WH);else if(need(reg.weight)&&need(reg.thrust))setReg(reg.answer,reg.weight.x/reg.thrust.x,U_NONE);}
+static void prop(){
+  static uint8_t st=0;
+  if(st==0&&reg.kv.set&&reg.cells.set&&reg.diameter.set){
+    double rpm=reg.kv.x*reg.cells.x*4.2;double pitch=reg.pitch.set?reg.pitch.x:reg.diameter.x;
+    reg.rpm.x=rpm;reg.rpm.u=U_RPM;reg.rpm.set=true;setReg(reg.answer,rpm*pitch*60/63360.0,U_NONE);tapeVal("RPM",rpm,U_RPM);return;
+  }
+  if(st==0){st=1;stepTag="KV?";tapeAdd("enter KV");return;}
+  double x=curValue();
+  if(st==1){wKv=x;reg.kv.x=x;reg.kv.u=U_KV;reg.kv.set=true;stepTag="S?";st=2;entering=false;}
+  else if(st==2){wCells=x;reg.cells.x=x;reg.cells.u=U_CELL;reg.cells.set=true;stepTag="diam?";st=3;entering=false;}
+  else if(st==3){wDiam=x;reg.diameter.x=x;reg.diameter.u=U_IN;reg.diameter.set=true;stepTag="pitch?";st=4;entering=false;}
+  else if(st==4){wPitch=x>0?x:wDiam;double rpm=wKv*wCells*4.2;reg.rpm.x=rpm;reg.rpm.set=true;
+    setReg(reg.answer,rpm*wPitch*60/63360.0,U_NONE);tapeVal("RPM",rpm,U_RPM);stepTag="mph";st=0;}
+}
+
+static void battery(){
+  static uint8_t st=0;
+  if(st==0&&reg.capacity.set&&reg.cells.set){setReg(reg.energy,reg.capacity.x*reg.cells.x*3.7/1000.0,U_WH);stepTag="Wh";return;}
+  if(st==0){st=1;stepTag="mAh?";tapeAdd("enter mAh");return;}
+  double x=curValue();
+  if(st==1){wMah=x;reg.capacity.x=x;reg.capacity.set=true;stepTag="S?";st=2;entering=false;}
+  else if(st==2){wCells=x;reg.cells.x=x;reg.cells.set=true;setReg(reg.energy,wMah*wCells*3.7/1000.0,U_WH);stepTag="Wh";st=0;}
+}
+
 static void batteryWh(){if(need(reg.capacity)&&need(reg.cells))setReg(reg.answer,reg.capacity.x*reg.cells.x*3.7/1000.0,U_WH);}
 static void torquePower(){if(need(reg.torque)&&need(reg.rpm))setReg(reg.answer,2*PI_D*reg.rpm.x*reg.torque.x/60.0,U_W);}
 static void speed(){if(!need(reg.rpm)||!need(reg.pitch))return;setReg(reg.answer,reg.rpm.x*reg.pitch.x*60/63360.0,U_NONE);}
 static void force(){if(need(reg.weight))setReg(reg.answer,reg.weight.x*G_ACC,U_NONE);}
 static void mass(){if(need(reg.weight))setReg(reg.answer,reg.weight.x/G_ACC,U_KG);}
 
-// === BUILD ===
-// TEST: rise=12 run=16 → slope=0.75 ∠≈36.87° 75%
 static void slope(){
-  stepSlope=(stepSlope%3)+1;stepTag="SLP";
-  if(!need(reg.rise)||!need(reg.run)){stepSlope=0;return;}
-  double s=reg.rise.x/reg.run.x;
-  if(stepSlope==1)setReg(reg.answer,s,U_NONE);
-  else if(stepSlope==2)setReg(reg.angle,atan2(reg.rise.x,reg.run.x)*180/PI_D,U_DEG);
-  else setReg(reg.answer,100*s,U_PCT);
+  if(stepSlope==0&&reg.rise.set&&reg.run.set){double s=reg.rise.x/reg.run.x;
+    setReg(reg.answer,s,U_NONE);setReg(reg.angle,atan2(reg.rise.x,reg.run.x)*180/PI_D,U_DEG);tapeVal("pct",100*s,U_PCT);stepTag="slp";return;}
+  if(stepSlope==0){stepSlope=1;stepTag="rise?";tapeAdd("enter rise");return;}
+  double x=curValue();
+  if(stepSlope==1){wRise=x;reg.rise.x=x;reg.rise.u=U_FT;reg.rise.set=true;stepTag="run?";tapeVal("rise",x,U_FT);stepSlope=2;entering=false;}
+  else if(stepSlope==2){wRun=x;reg.run.x=x;reg.run.u=U_FT;reg.run.set=true;double s=wRun!=0?wRise/wRun:NAN;
+    setReg(reg.answer,s,U_NONE);setReg(reg.angle,atan2(wRise,wRun)*180/PI_D,U_DEG);tapeVal("pct",100*s,U_PCT);stepTag="slp";stepSlope=0;}
 }
+
 static void angleSolve(){if(!need(reg.rise)||!need(reg.run))return;setReg(reg.angle,atan2(reg.rise.x,reg.run.x)*180/PI_D,U_DEG);}
 static void riseFromAngle(){if(!need(reg.run)||!need(reg.angle))return;setReg(reg.rise,reg.run.x*tan(reg.angle.x*PI_D/180),U_FT);}
-static void roof(){if(!need(reg.rise)||!need(reg.run))return;setReg(reg.answer,hypot(reg.rise.x,reg.run.x),U_FT);tapeVal("pitch",atan2(reg.rise.x,reg.run.x)*180/PI_D,U_DEG);}
+static void roof(){
+  static uint8_t st=0;
+  if(st==0&&reg.rise.set&&reg.run.set){setReg(reg.answer,hypot(reg.rise.x,reg.run.x),U_FT);tapeVal("pitch",atan2(reg.rise.x,reg.run.x)*180/PI_D,U_DEG);return;}
+  if(st==0){st=1;stepTag="rise?";tapeAdd("enter rise");return;}
+  double x=curValue();
+  if(st==1){wRise=x;reg.rise.x=x;reg.rise.u=U_FT;reg.rise.set=true;stepTag="run?";st=2;entering=false;}
+  else if(st==2){wRun=x;reg.run.x=x;reg.run.u=U_FT;reg.run.set=true;
+    setReg(reg.answer,hypot(wRise,wRun),U_FT);tapeVal("pitch",atan2(wRise,wRun)*180/PI_D,U_DEG);stepTag="raf";st=0;}
+}
+
 static void stairs(){if(!need(reg.rise)||!need(reg.run))return;setReg(reg.answer,hypot(reg.rise.x,reg.run.x),U_FT);tapeVal("risers",reg.dist.set?ceil(reg.dist.x/reg.rise.x):ceil(reg.rise.x/7.5),U_NONE);}
 static void stairCount(){if(!need(reg.rise))return;setReg(reg.answer,floor(reg.rise.x/7.5),U_NONE);}
-static void board(){if(need(reg.rise)&&need(reg.run)&&need(reg.dist))setReg(reg.answer,reg.rise.x*reg.run.x*reg.dist.x/12.0,U_FT);else if(need(reg.volume))setReg(reg.answer,reg.volume.x/12,U_FT);}
-static void concrete(){if(!need(reg.volume))return;setReg(reg.answer,reg.volume.x/27.0*1.10,U_YD3);}
-// TEST: perim=48 h=8 doors=1 wins=2 coats=2 → net=333 gal≈1.90
-static void paint(){
-  stepPaint=(stepPaint%2)+1;stepTag="PNT";
-  if(stepPaint==1){
-    if(!need(reg.rise)||!need(reg.run)){stepPaint=0;return;}
-    double net=reg.rise.x*reg.run.x-((reg.dist.set?reg.dist.x:0)*21+(reg.angle.set?reg.angle.x:0)*15);if(net<0)net=0;
-    setReg(reg.area,net,U_FT);tapeVal("NET",net,U_FT);
-  }else{if(!need(reg.area)){stepPaint=0;return;}double coats=reg.total.set?reg.total.x:1,cov=reg.price.set?reg.price.x:350;double g=reg.area.x*coats/cov;setReg(reg.answer,g,U_GAL);tapeVal("BUY",ceil(g),U_GAL);}
+static void board(){
+  static uint8_t st=0;static double t=0,w=0,l=0;
+  if(st==0&&reg.rise.set&&reg.run.set&&reg.dist.set){setReg(reg.answer,reg.rise.x*reg.run.x*reg.dist.x/12.0,U_FT);stepTag="bf";return;}
+  if(st==0){st=1;stepTag="T in?";tapeAdd("enter thickness in");return;}
+  double x=curValue();
+  if(st==1){t=x;stepTag="W in?";tapeVal("T",x,U_IN);st=2;entering=false;}
+  else if(st==2){w=x;stepTag="L ft?";tapeVal("W",x,U_IN);st=3;entering=false;}
+  else if(st==3){l=x;setReg(reg.answer,t*w*l/12.0,U_FT);tapeVal("+10%",t*w*l/12.0*1.1,U_FT);stepTag="bf";st=0;}
 }
+
+static void concrete(){if(!need(reg.volume))return;setReg(reg.answer,reg.volume.x/27.0*1.10,U_YD3);}
+// TEST: perim=48 h=8 doors=1 wins=2 coats=2 cov=350 → net=333 gal≈1.90
+// Sequential wizard — each press consumes current entry (no RISE/RUN hijack).
+// Steps: 1 perim 2 height 3 doors 4 wins 5 coats 6 coverage → gallons
+static double pPerim=0,pHt=0,pDoors=0,pWins=0,pCoats=1,pCov=350;
+static double wV=0,wA=0,wR=0,wC=0,wDist=0,wAwg=12,wRise=0,wRun=0;
+static double wFlour=0,wHydr=0,wP=0,wRate=0,wN=0,wKv=0,wCells=0,wDiam=0,wPitch=0,wMah=0;
+// PAINT: first press queues; stamps (rise=perim,run=ht,dist=doors,angle=wins) still work
+static void paint(){
+  if(stepPaint==0&&reg.rise.set&&reg.run.set){
+    double doors=reg.dist.set?reg.dist.x:0,wins=reg.angle.set?reg.angle.x:0;
+    double net=reg.rise.x*reg.run.x-(doors*21+wins*15);if(net<0)net=0;
+    double coats=reg.total.set?reg.total.x:1,cov=reg.price.set?reg.price.x:350;
+    reg.area.x=net;reg.area.u=U_FT;reg.area.set=true;
+    setReg(reg.answer,net*coats/cov,U_GAL);tapeVal("NET",net,U_FT);tapeVal("BUY",ceil(net*coats/cov),U_GAL);
+    stepTag="gal";return;
+  }
+  if(stepPaint==0){pPerim=pHt=pDoors=pWins=0;pCoats=1;pCov=350;stepPaint=1;stepTag="perim?";tapeAdd("enter perim");return;}
+  double x=curValue();
+  if(stepPaint==1){pPerim=x;stepTag="ht?";tapeVal("perim",x,U_FT);stepPaint=2;entering=false;}
+  else if(stepPaint==2){pHt=x;stepTag="doors?";tapeVal("ht",x,U_FT);stepPaint=3;entering=false;}
+  else if(stepPaint==3){pDoors=x;stepTag="wins?";tapeVal("doors",x,U_NONE);stepPaint=4;entering=false;}
+  else if(stepPaint==4){pWins=x;stepTag="coats?";tapeVal("wins",x,U_NONE);stepPaint=5;entering=false;}
+  else if(stepPaint==5){pCoats=x>0?x:1;stepTag="cov?";tapeVal("coats",pCoats,U_NONE);stepPaint=6;entering=false;}
+  else if(stepPaint==6){
+    pCov=x>0?x:350;tapeVal("cov",pCov,U_NONE);
+    double net=pPerim*pHt-(pDoors*21+pWins*15);if(net<0)net=0;
+    double g=net*pCoats/pCov;
+    reg.area.x=net;reg.area.u=U_FT;reg.area.set=true;
+    setReg(reg.answer,g,U_GAL);tapeVal("NET",net,U_FT);tapeVal("BUY",ceil(g),U_GAL);
+    stepTag="gal";stepPaint=0;
+  }
+}
+
 static void rectArea(){if(need(reg.rise)&&need(reg.run))setReg(reg.area,reg.rise.x*reg.run.x,U_FT);}
 static void circleArea(){double d=curValue();setReg(reg.answer,PI_D*d*d/4,U_FT);}
 static void cylVol(){
@@ -300,29 +380,38 @@ static void pyth(){if(need(reg.rise)&&need(reg.run))setReg(reg.answer,hypot(reg.
 static void materialWaste(){setReg(reg.answer,curValue()*1.10,U_NONE);}
 static void panRound(){double d=curValue();setReg(reg.answer,PI_D*d*d/4,U_FT);}
 
-// === KITCHEN ===
 static void bake(){
-  stepBake=(stepBake%4)+1;stepTag="BAKE";
-  if(stepBake==1&&need(reg.flour))setReg(reg.answer,reg.total.set?reg.total.x:reg.flour.x,U_G);
-  else if(stepBake==2&&need(reg.flour)&&need(reg.hydration))setReg(reg.answer,reg.flour.x*reg.hydration.x/100,U_G);
-  else if(stepBake==3&&need(reg.flour)&&need(reg.total))setReg(reg.hydration,(reg.total.x-reg.flour.x)/reg.flour.x*100,U_PCT);
-  else if(stepBake==4&&need(reg.total)&&need(reg.servings))setReg(reg.answer,reg.total.x/reg.servings.x,U_G);
-  else{beep();stepBake=0;}
+  if(stepBake==0&&reg.flour.set&&reg.hydration.set){setReg(reg.answer,reg.flour.x*reg.hydration.x/100,U_G);stepTag="H2O";return;}
+  if(stepBake==0){stepBake=1;stepTag="flour?";tapeAdd("enter flour g");return;}
+  double x=curValue();
+  if(stepBake==1){wFlour=x;reg.flour.x=x;reg.flour.u=U_G;reg.flour.set=true;stepTag="hydr%?";tapeVal("flour",x,U_G);stepBake=2;entering=false;}
+  else if(stepBake==2){wHydr=x;reg.hydration.x=x;reg.hydration.u=U_PCT;reg.hydration.set=true;
+    setReg(reg.answer,wFlour*wHydr/100,U_G);tapeVal("dough",wFlour+wFlour*wHydr/100,U_G);stepTag="H2O";stepBake=0;}
 }
+
 static void recipe(){if(!need(reg.total)||!need(reg.servings))return;setReg(reg.answer,reg.total.x/reg.servings.x,U_G);}
 static void hydWater(){if(need(reg.flour)&&need(reg.hydration))setReg(reg.answer,reg.flour.x*reg.hydration.x/100,U_G);}
 static void recipePct(){if(need(reg.total)&&need(reg.flour))setReg(reg.answer,reg.total.x/reg.flour.x*100,U_PCT);}
 static void density(){if(need(reg.total)&&need(reg.servings))setReg(reg.answer,reg.total.x/reg.servings.x,U_G);}
 
-// === MONEY ===
-// TEST: 100000 @5% 360mo → PMT≈536.82
 static void loan(){
-  if(!need(reg.principal)||!need(reg.rate)||!need(reg.term))return;
-  double P=reg.principal.x,rm=reg.rate.x/100/12,n=reg.term.x;
-  double pay=fabs(rm)<1e-15?P/n:P*rm*pow(1+rm,n)/(pow(1+rm,n)-1);
-  reg.payment.x=pay;reg.payment.u=U_DOLLAR;reg.payment.set=true;reg.interest.x=pay*n-P;reg.interest.u=U_DOLLAR;reg.interest.set=true;
-  setEntry(pay);tapeVal("PMT",pay,U_DOLLAR);tapeVal("INT",reg.interest.x,U_DOLLAR);stepTag="LOAN";
+  static uint8_t st=0;
+  if(st==0&&reg.principal.set&&reg.rate.set&&reg.term.set){
+    double P=reg.principal.x,rm=reg.rate.x/100/12,n=reg.term.x;
+    double pay=fabs(rm)<1e-15?P/n:P*rm*pow(1+rm,n)/(pow(1+rm,n)-1);
+    reg.payment.x=pay;reg.payment.u=U_DOLLAR;reg.payment.set=true;reg.interest.x=pay*n-P;reg.interest.u=U_DOLLAR;reg.interest.set=true;
+    setEntry(pay);tapeVal("PMT",pay,U_DOLLAR);tapeVal("INT",reg.interest.x,U_DOLLAR);stepTag="PMT";return;
+  }
+  if(st==0){st=1;stepTag="PV?";tapeAdd("enter principal");return;}
+  double x=curValue();
+  if(st==1){wP=x;reg.principal.x=x;reg.principal.u=U_DOLLAR;reg.principal.set=true;stepTag="APR%?";tapeVal("P",x,U_DOLLAR);st=2;entering=false;}
+  else if(st==2){wRate=x;reg.rate.x=x;reg.rate.u=U_PCT;reg.rate.set=true;stepTag="mo?";tapeVal("APR",x,U_PCT);st=3;entering=false;}
+  else if(st==3){wN=x;reg.term.x=x;reg.term.u=U_NONE;reg.term.set=true;
+    double rm=wRate/100/12,pay=fabs(rm)<1e-15?wP/wN:wP*rm*pow(1+rm,wN)/(pow(1+rm,wN)-1);
+    reg.payment.x=pay;reg.payment.u=U_DOLLAR;reg.payment.set=true;reg.interest.x=pay*wN-wP;reg.interest.u=U_DOLLAR;reg.interest.set=true;
+    setEntry(pay);tapeVal("PMT",pay,U_DOLLAR);tapeVal("INT",reg.interest.x,U_DOLLAR);stepTag="PMT";st=0;}
 }
+
 static void payoff(){
   if(!need(reg.principal)||!need(reg.rate)||!need(reg.payment))return;
   double bal=reg.principal.x,rm=reg.rate.x/100/12,pay=reg.payment.x,ex=reg.extra.set?reg.extra.x:0;
@@ -446,22 +535,32 @@ static void draw(){
   if(!dirty)return;dirty=false;
   if(helpMode){
     M5.Display.fillScreen(0x08C3);
-    M5.Display.fillRect(0,0,W,22,accents[page]);
+    // full-screen guide
+    M5.Display.fillRect(0,0,W,24,accents[page]);
     M5.Display.setTextColor(0xFFFF);M5.Display.setTextSize(1);
-    M5.Display.setCursor(4,4);M5.Display.printf("HELP %s  (tap hdr exit)",pageNames[page]);
+    M5.Display.setCursor(4,6);
+    M5.Display.printf("GUIDE  %s  %d/6",pageNames[page],page+1);
     M5.Display.setTextColor(0xAF27);
-    int y=28;
+    int y=30;
     for(int i=0;i<14;i++){
-      int idx=i+helpScroll;
-      if(idx>=14)break;
-      const char* line=helpText[page][idx];
+      const char* line=helpText[page][i];
       if(!line||!line[0])continue;
       M5.Display.setCursor(6,y);M5.Display.print(line);
-      y+=14;if(y>BAR_Y-4)break;
+      y+=13;if(y>BAR_Y-6)break;
     }
+    // labels ABOVE the physical A B C buttons
     M5.Display.fillRect(0,BAR_Y,W,H-BAR_Y,0x0C63);
-    M5.Display.setTextColor(0xFFFF);M5.Display.setCursor(8,BAR_Y+7);
-    M5.Display.print("tap upper=up  lower=down  bar=exit");
+    M5.Display.drawFastHLine(0,BAR_Y,W,0x038E);
+    M5.Display.setTextColor(0xFFFF);M5.Display.setTextSize(1);
+    // three zones aligned to Core2 buttons
+    M5.Display.fillRoundRect(8,BAR_Y+3,70,18,4,0x19C7);
+    M5.Display.setCursor(18,BAR_Y+7);M5.Display.print("< Prev");
+    M5.Display.fillRoundRect(125,BAR_Y+3,70,18,4,0x580B);
+    M5.Display.setTextColor(0xAF27);
+    M5.Display.setCursor(140,BAR_Y+7);M5.Display.print("Exit");
+    M5.Display.setTextColor(0xFFFF);
+    M5.Display.fillRoundRect(242,BAR_Y+3,70,18,4,0x19C7);
+    M5.Display.setCursor(258,BAR_Y+7);M5.Display.print("Next >");
     return;
   }
   M5.Display.fillScreen(0x08C3);
@@ -469,7 +568,7 @@ static void draw(){
   M5.Display.setTextColor(0xFFFF);M5.Display.setTextSize(1);
   M5.Display.setCursor(4,3);
   M5.Display.printf("%s",pageNames[page]);
-  if(shift){M5.Display.fillRoundRect(70,2,28,12,2,0x580B);M5.Display.setCursor(74,4);M5.Display.print("2ND");M5.Display.setTextColor(0xAF27);M5.Display.setCursor(102,4);M5.Display.print("hdr=HELP");M5.Display.setTextColor(0xFFFF);}
+  if(shift){M5.Display.fillRoundRect(70,2,28,12,2,0x580B);M5.Display.setCursor(74,4);M5.Display.print("2ND");M5.Display.setTextColor(0xAF27);M5.Display.setCursor(102,4);M5.Display.print("tap=GUIDE");M5.Display.setTextColor(0xFFFF);}
   if(engMode){M5.Display.setCursor(104,3);M5.Display.print("ENG");}
   if(stepTag[0]){M5.Display.setCursor(140,3);M5.Display.print(stepTag);}
   if(useAl&&page==0){M5.Display.setCursor(170,3);M5.Display.print("Al");}
@@ -520,10 +619,16 @@ static void touch(){
     return;
   }
   if(helpMode){
-    // scroll help: top half up, bottom half down; B/bar exits
-    if(y>=BAR_Y){helpMode=false;mark();return;}
-    if(y<H/2){if(helpScroll>0)helpScroll--;}
-    else helpScroll++;
+    // A/C zones or bar: cycle pages; center = exit
+    if(y>=BAR_Y){
+      if(x<106){page=(page+5)%6;helpScroll=0;}
+      else if(x>212){page=(page+1)%6;helpScroll=0;}
+      else{helpMode=false;}
+      mark();return;
+    }
+    // tap left/right half of screen also cycles
+    if(x<W/2){page=(page+5)%6;helpScroll=0;}
+    else{page=(page+1)%6;helpScroll=0;}
     mark();return;
   }
   if(y>=BAR_Y){
@@ -584,9 +689,21 @@ void setup(){
 }
 void loop(){
   M5.update();
-  if(M5.BtnA.wasPressed()){page=(page+5)%6;clearEntry();shift=false;helpMode=false;vib();mark();}
-  if(M5.BtnC.wasPressed()){page=(page+1)%6;clearEntry();shift=false;helpMode=false;vib();mark();}
-  if(M5.BtnB.wasPressed()){if(helpMode)helpMode=false;else shift=!shift;vib();mark();}
+  if(M5.BtnA.wasPressed()){
+    if(helpMode){page=(page+5)%6;helpScroll=0;}
+    else{page=(page+5)%6;clearEntry();shift=false;}
+    vib();mark();
+  }
+  if(M5.BtnC.wasPressed()){
+    if(helpMode){page=(page+1)%6;helpScroll=0;}
+    else{page=(page+1)%6;clearEntry();shift=false;}
+    vib();mark();
+  }
+  if(M5.BtnB.wasPressed()){
+    if(helpMode)helpMode=false;
+    else shift=!shift;
+    vib();mark();
+  }
   touch();
   static unsigned long last=0;
   if(dirty||millis()-last>200){draw();last=millis();}
