@@ -32,6 +32,9 @@ static bool entering=false,shift=false,dirty=true,engMode=false,useAl=false;
 static char op=0,entry[40]="0";static int entryLen=1,page=0,tapeCount=0;
 static char tape[8][48];
 static uint8_t stepOhm=0,stepFilt=0,stepVD=0,stepSlope=0,stepTrig=0,stepBake=0,stepPaint=0,stepAmort=0,stepConv=0;
+static double pPerim=0,pHt=0,pDoors=0,pWins=0,pCoats=1,pCov=350;
+static double wV=0,wA=0,wR=0,wC=0,wDist=0,wAwg=12,wRise=0,wRun=0;
+static double wFlour=0,wHydr=0,wP=0,wRate=0,wN=0,wKv=0,wCells=0,wDiam=0,wPitch=0,wMah=0;
 static unsigned long lastTouch=0;
 static bool helpMode=false;static int helpScroll=0;
 // On-device guide (2ND + tap header). ASCII only.
@@ -339,9 +342,6 @@ static void concrete(){if(!need(reg.volume))return;setReg(reg.answer,reg.volume.
 // TEST: perim=48 h=8 doors=1 wins=2 coats=2 cov=350 → net=333 gal≈1.90
 // Sequential wizard — each press consumes current entry (no RISE/RUN hijack).
 // Steps: 1 perim 2 height 3 doors 4 wins 5 coats 6 coverage → gallons
-static double pPerim=0,pHt=0,pDoors=0,pWins=0,pCoats=1,pCov=350;
-static double wV=0,wA=0,wR=0,wC=0,wDist=0,wAwg=12,wRise=0,wRun=0;
-static double wFlour=0,wHydr=0,wP=0,wRate=0,wN=0,wKv=0,wCells=0,wDiam=0,wPitch=0,wMah=0;
 // PAINT: first press queues; stamps (rise=perim,run=ht,dist=doors,angle=wins) still work
 static void paint(){
   if(stepPaint==0&&reg.rise.set&&reg.run.set){
