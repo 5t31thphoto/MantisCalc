@@ -1,0 +1,97 @@
+name: Build MantisCalculator
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PlatformIO + esptool
+        run: pip install -U platformio esptool
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            .pio
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: pio-${{ runner.os }}-
+
+      - name: Build firmware
+        run: pio run -e m5stack-core2
+
+      - name: Merge full 16MB flash image
+        run: |
+          BUILD=.pio/build/m5stack-core2
+          ls -la "$BUILD"
+          test -f "$BUILD/firmware.bin"
+          test -f "$BUILD/bootloader.bin"
+          test -f "$BUILD/partitions.bin"
+          if [ ! -f "$BUILD/boot_app0.bin" ]; then
+            BOOTAPP=$(find ~/.platformio -name 'boot_app0.bin' 2>/dev/null | head -1)
+            if [ -n "$BOOTAPP" ]; then
+              cp "$BOOTAPP" "$BUILD/boot_app0.bin"
+            else
+              python3 -c "open('$BUILD/boot_app0.bin','wb').write(b'\xff'*8192)"
+            fi
+          fi
+          python3 merge_bin.py "$BUILD" -o MantisCalculator.bin
+          ls -la MantisCalculator.bin
+          mkdir -p website/firmware
+          cp MantisCalculator.bin website/firmware/MantisCalculator.bin
+          cp "$BUILD/firmware.bin" website/firmware/app.bin
+          python3 - <<'PY'
+          import json, pathlib, datetime
+          p = pathlib.Path("website/firmware/manifest.json")
+          m = json.loads(p.read_text()) if p.exists() else {}
+          m["name"] = "MantisCalculator"
+          m["version"] = datetime.datetime.utcnow().strftime("%Y.%m.%d")
+          m["new_install_prompt_erase"] = True
+          m["builds"] = [{
+            "chipFamily": "ESP32",
+            "parts": [{"path": "./MantisCalculator.bin", "offset": 0}],
+            "improv": False,
+          }]
+          p.write_text(json.dumps(m, indent=2))
+          print(p.read_text())
+          PY
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MantisCalculator-firmware
+          path: |
+            MantisCalculator.bin
+            website/firmware/app.bin
+            website/firmware/manifest.json
+          retention-days: 30
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: website
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

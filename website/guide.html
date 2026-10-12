@@ -112,15 +112,15 @@ a{color:#5dcece}
 <tr><td><span class="key">VOLTS</span></td><td>Stamp voltage (V)</td><td>Scale as mV into V register</td></tr>
 <tr><td><span class="key">AMPS</span></td><td>Stamp current (A)</td><td>mA scale</td></tr>
 <tr><td><span class="key">OHMS</span></td><td>Stamp resistance</td><td>kOhm scale</td></tr>
-<tr><td><span class="key">WATTS</span></td><td>Stamp power (W)</td><td>dBm-style 20·log10</td></tr>
+<tr><td><span class="key">WATTS</span></td><td>Stamp power (W)</td><td>dB: 20·log10 of entry</td></tr>
 <tr><td><span class="key">FARAD</span></td><td>Stamp capacitance (F)</td><td>uF scale</td></tr>
 <tr><td><span class="key">Hz</span></td><td>Stamp frequency</td><td>Wavelength c/f (metres)</td></tr>
-<tr><td><span class="key">DIST</span></td><td>One-way wire length (ft)</td><td>Length convert helper</td></tr>
+<tr><td><span class="key">HENRY</span></td><td>Stamp inductance (H)</td><td>mH scale</td></tr>
+<tr><td><span class="key">DIST</span></td><td>One-way wire length (ft)</td><td>Power factor P/(V·I)</td></tr>
 <tr><td><span class="key">OHM/PWR</span></td><td>Sequential Ohm + power solver</td><td>XL / XC reactance (needs Hz + L or C)</td></tr>
-<tr><td><span class="key">VDROP</span></td><td>Sequential voltage drop / % / req AWG</td><td>Use CONVERT to toggle Al/Cu wire</td></tr>
+<tr><td><span class="key">VDROP</span></td><td>Sequential voltage drop / % / req AWG</td><td>Toggle Al/Cu wire</td></tr>
 <tr><td><span class="key">FILT</span></td><td>RC cutoff, τ, half-life</td><td>RLC resonant frequency</td></tr>
 <tr><td><span class="key">AWG</span></td><td>Recommend AWG or stamp gauge</td><td>Show circular mils for entered gauge</td></tr>
-<tr><td><span class="key">dB</span></td><td>20·log10 of entry</td><td>Power factor P/(V·I)</td></tr>
 </table>
 <p><b>OHM/PWR steps:</b> (1) solve missing V/I/R (2) power (3) R from P (4) V or I from P.<br>
 <b>VDROP steps:</b> needs V, A, DIST. (1) drop volts (2) % (3) AWG for ≤3% (4) AWG for ≤1%.</p>
@@ -179,7 +179,7 @@ a{color:#5dcece}
 <tr><td><span class="key">PRICE</span></td><td>Unit price</td><td>× total</td></tr>
 <tr><td><span class="key">BAKE</span></td><td>Sequential baker steps</td><td>Water from hydration</td></tr>
 <tr><td><span class="key">RECIPE</span></td><td>Scale per serving</td><td>Recipe %</td></tr>
-<tr><td><span class="key">CONV</span></td><td>Volume chain cup→tbsp→tsp→mL→L→gal</td><td>SI scale</td></tr>
+<tr><td><span class="key">CONV</span></td><td>Volume chain cup→tbsp→tsp→mL→L→gal</td><td>C↔F</td></tr>
 <tr><td><span class="key">AREA</span> / <span class="key">VOL</span></td><td>Pan area / volume</td><td>Round pan / cylinder</td></tr>
 </table>
 </div>
@@ -228,7 +228,7 @@ a{color:#5dcece}
 <span class="n">1.</span> ELEC page<br>
 <span class="n">2.</span> <code>120</code> <span class="key">OHM/PWR</span> → header <b>V</b><br>
 <span class="n">3.</span> <code>15</code> <span class="key">OHM/PWR</span> → header <b>A</b><br>
-<span class="n">4.</span> <span class="key">OHM/PWR</span> → <b>8 ohm</b>, tape <b>1800 W</b>
+<span class="n">→</span> result appears on the 2nd entry: <b>8 ohm</b>, tape <b>1800 W</b>
 </div>
 </div>
 
@@ -236,10 +236,10 @@ a{color:#5dcece}
 <h4>Example B — Voltage drop &amp; wire size</h4>
 <p>120 V, 15 A, 75 ft one-way, 14 AWG copper.</p>
 <div class="step">
-<span class="n">1.</span> ELEC · copper mode (2ND <span class="key">CONV</span> toggles Al)<br>
+<span class="n">1.</span> ELEC · copper mode (2ND <span class="key">VDROP</span> toggles Al)<br>
 <span class="n">2.</span> <code>120</code> <span class="key">VDROP</span> → <b>Vsrc</b> · <code>15</code> <span class="key">VDROP</span> → <b>A</b><br>
 <span class="n">3.</span> <code>75</code> <span class="key">VDROP</span> → <b>ft</b> · <code>14</code> <span class="key">VDROP</span> → <b>awg</b><br>
-<span class="n">4.</span> <span class="key">VDROP</span> → drop ~<b>7.07 V</b>, tape % and AWG for 3%
+<span class="n">→</span> after the AWG entry: drop ~<b>7.07 V</b>, tape % and AWG for 3%
 </div>
 </div>
 
@@ -249,7 +249,7 @@ a{color:#5dcece}
 <div class="step">
 <span class="n">1.</span> <code>100</code> <span class="key">FILT</span> → <b>R</b><br>
 <span class="n">2.</span> <code>1e-6</code> <span class="key">FILT</span> → <b>C</b><br>
-<span class="n">3.</span> <span class="key">FILT</span> → <b>fc ≈ 1591.5 Hz</b> (tau taped)
+<span class="n">→</span> after C: <b>fc ≈ 1591.5 Hz</b> (tau taped). Enter 1e-6 as 1 2ND EE 2ND +/- 6
 </div>
 </div>
 
@@ -260,7 +260,7 @@ a{color:#5dcece}
 <span class="n">1.</span> MONEY · <code>100000</code> <span class="key">PMT</span> → <b>PV</b><br>
 <span class="n">2.</span> <code>5</code> <span class="key">PMT</span> → <b>APR%</b><br>
 <span class="n">3.</span> <code>360</code> <span class="key">PMT</span> → <b>mo</b><br>
-<span class="n">4.</span> <span class="key">PMT</span> → <b>≈ $536.82</b> (interest taped)
+<span class="n">→</span> after months: <b>≈ $536.82</b> (interest taped)
 </div>
 </div>
 
@@ -283,7 +283,7 @@ a{color:#5dcece}
 <span class="n">3.</span> <code>8</code> <span class="key">PAINT</span> → <b>ht</b><br>
 <span class="n">4.</span> <code>1</code> <span class="key">PAINT</span> → <b>doors</b> · <code>2</code> <span class="key">PAINT</span> → <b>wins</b><br>
 <span class="n">5.</span> <code>2</code> <span class="key">PAINT</span> → <b>coats</b> · <code>350</code> <span class="key">PAINT</span> → <b>cov</b><br>
-<span class="n">6.</span> <span class="key">PAINT</span> again → net <b>333 ft²</b>, ~<b>1.90 gal</b> (buy 2)
+<span class="n">→</span> after coverage: net <b>333 ft²</b>, ~<b>1.90 gal</b> (buy 2). Tip: press PAINT with nothing typed after height to use defaults.
 </div>
 </div>
 
@@ -293,7 +293,7 @@ a{color:#5dcece}
 <div class="step">
 <span class="n">1.</span> KITCHEN · <code>1000</code> <span class="key">BAKE</span> → <b>flour</b><br>
 <span class="n">2.</span> <code>65</code> <span class="key">BAKE</span> → <b>hydr%</b><br>
-<span class="n">3.</span> <span class="key">BAKE</span> → <b>650 g water</b>
+<span class="n">→</span> after hydration: <b>650 g water</b>
 </div>
 </div>
 

@@ -81,7 +81,25 @@ The secondary layer is intentionally functional rather than decorative: conversi
 
 **Numeric 2nd layer (always available):** π e % ^ | BS ± ABS mod | 1/x ANS EE %Δ | CLR MR MS MC
 
-## Recent fixes (v1.3)
+## v1.7 skeuomorphic UI
+
+- Brushed-gunmetal bezel, recessed LCD glass with 16-cell 7-segment readout + ghost segments, LCD annunciators (page, 2ND, M, ENG, Cu/Al, wizard step, V A R P C L f d).
+- Glossy domed keys with drop shadow and 1px sink animation on press; shift legends printed on every key in lime and swapped when 2ND is latched.
+- Palette from the MantisCalc logo: teal function keys, slate digits, purple operators, lime =. Soft-key pills name the prev/next calculator.
+- Rendered to a PSRAM canvas and pushed in one blit (no flicker). Touch geometry unchanged.
+
+## Fixes (v1.6)
+
+- Touch: one action per tap (was auto-repeating) and the Core2 button strip no longer double-fires with A/B/C.
+- Typing after a result starts a new number; `2 + sqrt 9 =` keeps its left operand; `0.1+0.2-0.3` shows 0; EE takes a negative exponent via +/-.
+- Wizards take the number typed before the first press (`120 OHM/PWR 15 OHM/PWR` → 8 ohm, 1800 W) and can restart any time.
+- New **HENRY / mH** key (XL/XC and RLC were unreachable). mV/mA/kOhm/uF/mH scale only their own register.
+- CONV fixed on every page (page index was off by one). Al/Cu has its own key (VDROP 2ND); temp C↔F on CONV 2ND.
+- AWG no longer recommends 40 ga when nothing fits; SLOPE shows the ratio; PAINT optional steps default on a bare press.
+- ASCII-only device text; stronger haptic tick.
+- `test/run_tests.sh`: 44 host-side checks of every major equation against the real source.
+
+## Earlier fixes (v1.3)
 
 Full multitool pass. All 2nd keys match labels. Unit engine, domain depth, UX flags.
 

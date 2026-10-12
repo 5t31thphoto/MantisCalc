@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include "logo_rgb565.h"
 
-// MantisCalculator v1.5.7 — full multitool. Dense. Agent-maintained.
+// MantisCalculator v1.7 - full multitool. Dense. Agent-maintained.
 // A/C=pages B=2nd. Stamp units → solvers. No menus. No long-press.
 // === SECTIONS: consts | regs | keys | core | unit | elec | mech | build | kit | money | math | ui ===
 
@@ -27,7 +27,7 @@ struct Registers{
 }reg;
 
 static int stN=0;static double stMin=0,stMax=0,stSum=0;
-static double cur=0,memory=0,awgCm[41];
+static double cur=0,disp=0,memory=0,awgCm[41];
 static bool entering=false,shift=false,dirty=true,engMode=false,useAl=false;
 static char op=0,entry[40]="0";static int entryLen=1,page=0,tapeCount=0;
 static char tape[8][48];
@@ -40,17 +40,17 @@ static bool helpMode=false;static int helpScroll=0;
 // On-device guide (2ND + tap header). ASCII only.
 static const char* helpText[6][14]={
  // MATH
- {"MATH — scientific","Normal calculator first","x^2 sqrt 1/x LOG LN","SIN COS TAN degrees","FRAC best fraction a/b","ENG engineering display","STAT add sample / min max","2ND num: pi e % ^ BS CLR","Memory: MR MS MC ANS EE","Enter number, press key","", "", "", ""},
+ {"MATH - scientific","Normal calculator first","x^2 sqrt 1/x LOG LN","SIN COS TAN degrees","FRAC best fraction a/b","ENG engineering display","STAT add sample / min max","2ND num: pi e % ^ BS CLR","Memory: MR MS MC ANS EE","Enter number, press key","", "", "", ""},
  // ELEC
- {"ELEC — electrical","Press tool first to queue","OHM/PWR: V -> A -> R,P","FILT: R -> C -> fc,tau","VDROP: V A ft awg -> drop","  header shows step name","Unit keys still stamp","VOLTS AMPS OHMS etc","AWG: gauge or recommend","2ND: mV mA kOhm uF wave","Al/Cu: 2ND CONV toggle","Ex: 120 OHM/PWR 15 OHM/PWR","  -> 8 ohm 1800 W", ""},
+ {"ELEC - electrical","Press tool first to queue","OHM/PWR: V -> A -> R,P","FILT: R -> C -> fc,tau","VDROP: V A ft awg -> drop","  header shows step name","Unit keys still stamp","VOLTS AMPS OHMS etc","AWG: gauge or recommend","2ND: mV mA kOhm uF wave","Al/Cu: 2ND CONV toggle","Ex: 120 OHM/PWR 15 OHM/PWR","  -> 8 ohm 1800 W", ""},
  // MECH
- {"MECH/RF — motors","MOTOR: KV -> S -> RPM","PROP: KV S diam pitch mph","BAT: mAh -> S -> Wh","Enter value, press key","each time for next step","FREQ WAVE wavelength","RATIO GEAR helpers","", "", "", "", "", ""},
+ {"MECH/RF - motors","MOTOR: KV -> S -> RPM","PROP: KV S diam pitch mph","BAT: mAh -> S -> Wh","Enter value, press key","each time for next step","FREQ WAVE wavelength","RATIO GEAR helpers","", "", "", "", "", ""},
  // BUILD
- {"BUILD — trades","SLOPE: rise -> run -> %","ROOF: rise -> run -> len","BOARD: T W L -> board-ft","PAINT: perim ht doors","  wins coats cov -> gal","CONC: volume -> yd3","TRIG sin cos tan cycle","Ex paint: 48 PAINT 8 PAINT","1 PAINT 2 PAINT 2 PAINT","350 PAINT PAINT -> gal", "", "", ""},
+ {"BUILD - trades","SLOPE: rise -> run -> %","ROOF: rise -> run -> len","BOARD: T W L -> board-ft","PAINT: perim ht doors","  wins coats cov -> gal","CONC: volume -> yd3","TRIG sin cos tan cycle","Ex paint: 48 PAINT 8 PAINT","1 PAINT 2 PAINT 2 PAINT","350 PAINT -> gal", "", "", ""},
  // KITCHEN
- {"KITCHEN — baking","BAKE: flour -> hydr% -> H2O","CONV: cup tbsp tsp mL L","TEMP stamps C / 2ND F","RECIPE scale per serving","Enter then press BAKE", "", "", "", "", "", "", "", ""},
+ {"KITCHEN - baking","BAKE: flour -> hydr% -> H2O","CONV: cup tbsp tsp mL L","TEMP stamps C / 2ND F","RECIPE scale per serving","Enter then press BAKE", "", "", "", "", "", "", "", ""},
  // MONEY
- {"MONEY — loans","PMT wizard:","  PV -> APR% -> months","  -> payment + interest","Ex: 100000 PMT","  5 PMT  360 PMT  PMT","  -> ~536.82","AMORT steps balance","PAYOFF months to clear","", "", "", "", ""}
+ {"MONEY - loans","PMT wizard:","  PV -> APR% -> months","  -> payment + interest","Ex: 100000 PMT","  5 PMT  360 PMT  PMT","  -> ~536.82","AMORT steps balance","PAYOFF months to clear","", "", "", "", ""}
 };
 
 static const char* stepTag=""; // shown in header when sequential active
@@ -69,7 +69,7 @@ enum Act{
   A_TORQUEPOWER,A_SPEED,A_FORCE,A_MASS,A_RECTAREA,A_CIRCLEAREA,A_CYLVOL,A_PYTH,
   A_STAIRCOUNT,A_MATERIALWASTE,A_PANROUND,A_HYDRWATER,A_RECIPEPCT,A_FV,A_INTEREST,
   A_PAYMONTHS,A_PRESENT,A_CASHFLOW,A_DEG2RAD,A_RAD2DEG,A_SINH,A_COSH,A_TANH,A_SIGFIG,
-  A_SIPREFIX,A_CMIL,A_ANGLE_SOLVE,A_RISE_FROM_ANGLE,A_ENG,A_STATCLR,A_SERIESR,A_PARALLELR
+  A_SIPREFIX,A_MV,A_MA,A_KOHM,A_UF,A_MH,A_ALCU,A_TEMPCONV,A_CMIL,A_ANGLE_SOLVE,A_RISE_FROM_ANGLE,A_ENG,A_STATCLR,A_SERIESR,A_PARALLELR
 };
 struct Key{const char* p;const char* s;Act a,b;};
 
@@ -80,14 +80,14 @@ static const uint16_t accents[]={0xC700,0x038E,0x580B,0xAF27,0x0451,0x780F}; // 
 static Key pages[6][12]={
  {{"x^2","sqrt",A_SQUARE,A_SQRT},{"sqrt","x^2",A_SQRT,A_SQUARE},{"1/x","%",A_RECIP,A_PERCENT},{"LOG","10^x",A_LOG,A_POW10},{"LN","e^x",A_LN,A_EXP},{"e^x","LN",A_EXP,A_LN},
   {"SIN","asin",A_SIN,A_ASIN},{"COS","acos",A_COS,A_ACOS},{"TAN","atan",A_TAN,A_ATAN},{"WAVE","f",A_WAVELEN,A_HZ},{"FRAC","ENG",A_FRAC,A_ENG},{"STAT","minMx",A_STAT,A_MINMAX}},
- {{"VOLTS","mV",A_V,A_SIPREFIX},{"AMPS","mA",A_A,A_SIPREFIX},{"OHMS","kOhm",A_R,A_SIPREFIX},{"WATTS","dBm",A_P,A_DB},{"FARAD","uF",A_C,A_SIPREFIX},{"Hz","wave",A_HZ,A_WAVELEN},
-  {"DIST","ft-in",A_DIST,A_CONVERT},{"OHM/PWR","XL/XC",A_OHMPWR,A_REACT},{"VDROP","Al/Cu",A_VDROP,A_CONVERT},{"FILT","RLC",A_FILT,A_RLC},{"AWG","cmil",A_AWG,A_CMIL},{"dB","PF",A_DB,A_PF}},
+ {{"VOLTS","mV",A_V,A_MV},{"AMPS","mA",A_A,A_MA},{"OHMS","kOhm",A_R,A_KOHM},{"WATTS","dB",A_P,A_DB},{"FARAD","uF",A_C,A_UF},{"Hz","wave",A_HZ,A_WAVELEN},
+  {"DIST","PF",A_DIST,A_PF},{"OHM/PWR","XL/XC",A_OHMPWR,A_REACT},{"VDROP","Al/Cu",A_VDROP,A_ALCU},{"FILT","RLC",A_FILT,A_RLC},{"AWG","cmil",A_AWG,A_CMIL},{"HENRY","mH",A_L,A_MH}},
  {{"KV","RPM",A_KV,A_RPM},{"CELLS","xV",A_CELLS,A_CONVERT},{"RPM","rps",A_RPM,A_CONVERT},{"THRUST","lb",A_THRUST,A_CONVERT},{"WEIGHT","kg",A_WEIGHT,A_CONVERT},{"RATIO","gear",A_RATIO,A_GEAR},
   {"PROP","mph",A_PROP,A_SPEED},{"GEAR","Pwr",A_GEAR,A_TORQUEPOWER},{"FREQ","wave",A_HZ,A_WAVELEN},{"WAVE","ft",A_WAVELEN,A_CONVERT},{"BAT","Wh",A_BATTERY,A_BATTERYWH},{"MOTOR","torq",A_MOTOR,A_TORQUE}},
  {{"RISE","slope",A_RISE,A_SLOPE},{"RUN","ang",A_RUN,A_ANGLE_SOLVE},{"SLOPE","ang",A_SLOPE,A_ANGLE_SOLVE},{"ANGLE","rise",A_ANGLE,A_RISE_FROM_ANGLE},{"AREA","circ",A_AREA,A_CIRCLEAREA},{"VOL","cyl",A_VOLUME,A_CYLVOL},
   {"ROOF","hyp",A_ROOF,A_PYTH},{"STAIRS","#",A_STAIRS,A_STAIRCOUNT},{"BOARD","+10%",A_BOARD,A_MATERIALWASTE},{"PAINT","step",A_PAINT,A_RECTAREA},{"CONC","yd3",A_CONCRETE,A_CONVERT},{"TRIG","inv",A_TRIG,A_ASIN}},
  {{"FLOUR","%",A_FLOUR,A_RECIPEPCT},{"TOTAL","/serv",A_TOTAL,A_SERV},{"HYDR%","H2O",A_HYDR,A_HYDRWATER},{"SERV","dens",A_SERV,A_DENSITY},{"TEMP","F",A_TEMP,A_TEMPF},{"PRICE","x",A_PRICE,A_TOTAL},
-  {"BAKE","next",A_BAKE,A_HYDRWATER},{"RECIPE","scale",A_RECIPE,A_RECIPEPCT},{"DENS","g/cup",A_DENSITY,A_CONVERT},{"CONV","chain",A_CONVERT,A_SIPREFIX},{"AREA","pan",A_AREA,A_PANROUND},{"VOL","pan",A_VOLUME,A_CYLVOL}},
+  {"BAKE","next",A_BAKE,A_HYDRWATER},{"RECIPE","scale",A_RECIPE,A_RECIPEPCT},{"DENS","g/cup",A_DENSITY,A_CONVERT},{"CONV","C<>F",A_CONVERT,A_TEMPCONV},{"AREA","pan",A_AREA,A_PANROUND},{"VOL","pan",A_VOLUME,A_CYLVOL}},
  {{"PRINC","PV",A_PRINC,A_PRESENT},{"RATE%","I/mo",A_RATE,A_INTEREST},{"TERM","n mo",A_TERM,A_PAYMONTHS},{"PMT","solve",A_LOAN,A_AMORT},{"INT","total",A_INTEREST,A_LOAN},{"SAV","FV",A_COMPOUND,A_FV},
   {"PAYOFF","extra",A_PAYOFF,A_PAYMONTHS},{"AMORT","step",A_AMORT,A_CASHFLOW},{"%","d%",A_PERCENT,A_PERCENTDELTA},{"ROUND","sig",A_ROUND,A_SIGFIG},{"PRICE","x",A_PRICE,A_TOTAL},{"TOTAL","sum",A_TOTAL,A_CASHFLOW}}
 
@@ -98,7 +98,7 @@ static const char* us(Unit u){
   static const char* n[]={"","V","A","ohm","W","F","H","Hz","m","ft","in","yd","deg","rad","%","g","kg","lb","rpm","KV","S","C","F","cup","tbsp","tsp","floz","$","gal","L","AWG","cmil","yd3","mL","Wh"};
   return (u>=0&&u<=U_WH)?n[u]:"";
 }
-static void vib(){M5.Power.setVibration(true);delay(5);M5.Power.setVibration(false);}
+static void vib(){M5.Power.setVibration(180);delay(20);M5.Power.setVibration(0);}
 static void beep(){M5.Speaker.tone(880,16);}
 static void mark(){dirty=true;}
 static void fmt(double x,char*o,size_t n){
@@ -108,35 +108,45 @@ static void fmt(double x,char*o,size_t n){
 }
 static void tapeAdd(const char*s){for(int i=7;i>0;i--)strncpy(tape[i],tape[i-1],47);strncpy(tape[0],s,47);tape[0][47]=0;if(tapeCount<8)tapeCount++;mark();}
 static void tapeVal(const char*t,double x,Unit u){char b[48],n[24];fmt(x,n,sizeof n);snprintf(b,sizeof b,"%s %s %s",t,n,us(u));tapeAdd(b);}
-static void setEntry(double x){fmt(x,entry,sizeof entry);entryLen=strlen(entry);entering=true;cur=x;mark();}
+static void setEntry(double x){disp=x;entering=false;mark();}
+// typed(): user has keyed a number since the last consumer (wizards take it as their next input)
+static bool typed(){return entering&&strcmp(entry,"0")!=0;}
 static double getEntry(){return strtod(entry,nullptr);}
-static double curValue(){return entering?getEntry():cur;}
+static double curValue(){return entering?getEntry():disp;}
 static void clearEntry(){
-  strcpy(entry,"0");entryLen=1;entering=true;cur=0;op=0;stepTag="";helpMode=false;
+  strcpy(entry,"0");entryLen=1;entering=true;cur=0;disp=0;op=0;stepTag="";helpMode=false;
   stepOhm=stepFilt=stepVD=stepSlope=stepTrig=stepBake=stepPaint=stepAmort=stepConv=0;mark();
 }
 static void setReg(Value&v,double x,Unit u){v.x=x;v.u=u;v.set=true;reg.answer=v;setEntry(x);tapeVal("=",x,u);}
 static bool need(const Value&v){if(!v.set){beep();return false;}return true;}
-static void digit(int d){if(!entering||!strcmp(entry,"0")){entry[0]=char('0'+d);entry[1]=0;entryLen=1;entering=true;}else if(entryLen<38){entry[entryLen++]=char('0'+d);entry[entryLen]=0;}mark();}
-static void dot(){if(!entering){strcpy(entry,"0.");entryLen=2;entering=true;}else if(!strchr(entry,'.')&&entryLen<37){entry[entryLen++]='.';entry[entryLen]=0;}mark();}
-static void sign(){setEntry(-curValue());}
+static void digit(int d){if(!entering||!strcmp(entry,"0")||!strcmp(entry,"-0")){entry[0]=char('0'+d);entry[1]=0;entryLen=1;entering=true;}else if(entryLen<38){entry[entryLen++]=char('0'+d);entry[entryLen]=0;}mark();}
+static void dot(){if(!entering){strcpy(entry,"0.");entryLen=2;entering=true;}else if(!strchr(entry,'.')&&!strchr(entry,'e')&&entryLen<37){entry[entryLen++]='.';entry[entryLen]=0;}mark();}
+static void sign(){
+  if(!entering){setEntry(-disp);return;}
+  char*e=strchr(entry,'e');
+  if(e){if(e[1]=='-')memmove(e+1,e+2,strlen(e+2)+1);else if(entryLen<36){memmove(e+2,e+1,strlen(e+1)+1);e[1]='-';}}
+  else if(entry[0]=='-')memmove(entry,entry+1,strlen(entry));else if(entryLen<36){memmove(entry+1,entry,strlen(entry)+1);entry[0]='-';}
+  entryLen=strlen(entry);mark();
+}
 static void back(){if(!entering)return;if(entryLen>1)entry[--entryLen]=0;else{strcpy(entry,"0");entryLen=1;}mark();}
 static void binary(char o){
   double x=curValue();
   if(op){double r=cur;if(op=='+')r+=x;else if(op=='-')r-=x;else if(op=='*')r*=x;else if(op=='/')r=fabs(x)>1e-15?cur/x:NAN;else if(op=='^')r=pow(cur,x);else if(op=='%')r=fmod(cur,x);cur=r;}
-  else cur=x;op=o;entering=false;mark();
+  else cur=x;disp=cur;op=o;entering=false;mark();
 }
 static void equals(){
   double x=curValue();
   if(op){double left=cur,r=left;
-    if(op=='+')r+=x;else if(op=='-')r-=x;else if(op=='*')r*=x;else if(op=='/')r=fabs(x)>1e-15?left/x:NAN;else if(op=='^')r=pow(left,x);else if(op=='%')r=fmod(left,x);
-    char b[48],a[16],z[16],q[16];fmt(left,a,16);fmt(x,z,16);fmt(r,q,16);
-    snprintf(b,48,"%s %c %s=%s",a,op,z,q);tapeAdd(b);cur=r;op=0;setEntry(r);reg.answer.x=r;reg.answer.u=U_NONE;reg.answer.set=true;
+    if(op=='+')r+=x;else if(op=='-')r-=x;else if(op=='*')r*=x;else if(op=='/')r=fabs(x)>1e-15?left/x:NAN;
+    ;if((op=='+'||op=='-')&&fabs(r)<1e-12*fmax(fabs(left),fabs(x)))r=0;else if(op=='^')r=pow(left,x);else if(op=='%')r=fmod(left,x);
+    char b[64],a[20],z[20],q[20];fmt(left,a,20);fmt(x,z,20);fmt(r,q,20);
+    snprintf(b,64,"%s %c %s=%s",a,op,z,q);tapeAdd(b);cur=r;op=0;setEntry(r);reg.answer.x=r;reg.answer.u=U_NONE;reg.answer.set=true;
   }else{cur=x;setEntry(x);tapeVal("=",x,U_NONE);}
 }
 static void initAwg(){for(int n=0;n<=40;n++){double d=5.0*pow(92.0,(36.0-n)/39.0);awgCm[n]=d*d;}}
 static int awgFor(double amps,double lenFt,double volts,double pct){
-  double K=useAl?K_AL:K_CU,t=volts*pct/100;for(int n=40;n>=0;n--)if(2*lenFt*amps*K/awgCm[n]<=t)return n;return 40;}
+  double K=useAl?K_AL:K_CU,t=volts*pct/100;for(int n=40;n>=0;n--)if(2*lenFt*amps*K/awgCm[n]<=t)return n;return -1;}
+static double awgD(int n){return n<0?NAN:(double)n;} // NAN -> tape shows ERR (needs > 1/0)
 static double wireDrop(double amps,double lenFt,int awg){if(awg<0||awg>40)return NAN;return 2*lenFt*amps*(useAl?K_AL:K_CU)/awgCm[awg];}
 static double Rpar(double a,double b){return fabs(a+b)>1e-15?a*b/(a+b):NAN;}
 
@@ -157,28 +167,24 @@ static void siPrefix(){
 static void convert(){
   double x=curValue();
   stepConv=(stepConv%6)+1;
-  if(page==0){ // ELEC: Al/Cu toggle first, then length/freq
-    if(stepConv==1){useAl=!useAl;tapeAdd(useAl?"AL wire":"CU wire");stepTag=useAl?"Al":"Cu";return;}
-    if(reg.hz.set){setReg(reg.answer,C_LIGHT/reg.hz.x,U_M);return;}
-    if(reg.dist.set){setReg(reg.answer,reg.dist.x*12,U_IN);return;}
+  if(page==1){ // ELEC: ft -> in
+    if(!typed()&&reg.dist.set){setReg(reg.answer,reg.dist.x*12,U_IN);return;}
     setReg(reg.answer,x*12,U_IN);return;
   }
-  if(page==1){ // MECH
+  if(page==2){ // MECH
     if(reg.rpm.set&&stepConv==1){setReg(reg.answer,reg.rpm.x/60,U_NONE);return;}
     if(reg.thrust.set){setReg(reg.answer,reg.thrust.x*0.00220462,U_LB);return;}
     if(reg.weight.set){setReg(reg.answer,reg.weight.x/1000,U_KG);return;}
     setEntry(x);return;
   }
-  if(page==2){ // BUILD length
+  if(page==3){ // BUILD length
     if(reg.rise.set&&reg.run.set&&stepConv<=2){setReg(reg.answer,reg.rise.x/reg.run.x,U_NONE);return;}
     if(stepConv==1){setReg(reg.answer,x*12,U_IN);return;}
     if(stepConv==2){setReg(reg.answer,x/12,U_FT);return;}
     if(stepConv==3){setReg(reg.answer,x*0.3048,U_M);return;}
     setReg(reg.answer,x/0.3048,U_FT);return;
   }
-  if(page==3){ // KITCHEN volume + temp chain
-    if(reg.temp.set&&reg.temp.u==U_C){setReg(reg.temp,reg.temp.x*9/5+32,U_FAH);return;}
-    if(reg.temp.set&&reg.temp.u==U_FAH){setReg(reg.temp,(reg.temp.x-32)*5/9,U_C);return;}
+  if(page==4){ // KITCHEN volume chain (temp lives on CONV 2nd)
     // volume cycle: cup→tbsp→tsp→mL→L→gal→cup
     static const double f[]={1,16,48,236.588,0.236588,0.0157725}; // from cup
     static Unit tu[]={U_CUP,U_TBSP,U_TSP,U_ML,U_LITER,U_GAL};
@@ -189,7 +195,7 @@ static void convert(){
     else if(reg.answer.u==U_GAL)cups=x/0.0157725;
     setReg(reg.answer,cups*f[i],tu[i]);return;
   }
-  if(page==4){if(reg.price.set&&reg.total.set){setReg(reg.answer,reg.price.x*reg.total.x,U_DOLLAR);return;}}
+  if(page==5){if(reg.price.set&&reg.total.set){setReg(reg.answer,reg.price.x*reg.total.x,U_DOLLAR);return;}}
   setReg(reg.answer,x,U_NONE);
 }
 
@@ -210,45 +216,48 @@ static void toFraction(){
 }
 
 static void ohmPwr(){
+  if(stepOhm==0&&typed())stepOhm=1;
   if(stepOhm==0&&reg.v.set&&reg.a.set){setReg(reg.r,reg.v.x/reg.a.x,U_OHM);setReg(reg.p,reg.v.x*reg.a.x,U_W);stepTag="Ohm";return;}
   if(stepOhm==0&&reg.v.set&&reg.r.set){setReg(reg.a,reg.v.x/reg.r.x,U_A);setReg(reg.p,reg.v.x*reg.v.x/reg.r.x,U_W);stepTag="Ohm";return;}
   if(stepOhm==0&&reg.a.set&&reg.r.set){setReg(reg.v,reg.a.x*reg.r.x,U_V);setReg(reg.p,reg.a.x*reg.a.x*reg.r.x,U_W);stepTag="Ohm";return;}
   if(stepOhm==0){stepOhm=1;stepTag="V?";tapeAdd("enter V");return;}
   double x=curValue();
-  if(stepOhm==1){wV=x;reg.v.x=x;reg.v.u=U_V;reg.v.set=true;stepTag="A?";tapeVal("V",x,U_V);stepOhm=2;entering=false;}
+  if(stepOhm==1){wV=x;reg.v.x=x;reg.v.u=U_V;reg.v.set=true;stepTag="A?";tapeVal("V",x,U_V);stepOhm=2;setEntry(x);}
   else if(stepOhm==2){wA=x;reg.a.x=x;reg.a.u=U_A;reg.a.set=true;double R=wA!=0?wV/wA:NAN,P=wV*wA;
     reg.r.x=R;reg.r.u=U_OHM;reg.r.set=true;reg.p.x=P;reg.p.u=U_W;reg.p.set=true;
     setReg(reg.answer,R,U_OHM);tapeVal("P",P,U_W);stepTag="ohm";stepOhm=0;}
 }
 
 static void filt(){
+  if(stepFilt==0&&typed())stepFilt=1;
   if(stepFilt==0&&reg.r.set&&reg.c.set){double R=reg.r.x,C=reg.c.x;setReg(reg.hz,1/(2*PI_D*R*C),U_HZ);tapeVal("tau",R*C,U_NONE);stepTag="fc";return;}
   if(stepFilt==0){stepFilt=1;stepTag="R?";tapeAdd("enter R");return;}
   double x=curValue();
-  if(stepFilt==1){wR=x;reg.r.x=x;reg.r.u=U_OHM;reg.r.set=true;stepTag="C?";tapeVal("R",x,U_OHM);stepFilt=2;entering=false;}
+  if(stepFilt==1){wR=x;reg.r.x=x;reg.r.u=U_OHM;reg.r.set=true;stepTag="C?";tapeVal("R",x,U_OHM);stepFilt=2;setEntry(x);}
   else if(stepFilt==2){wC=x;reg.c.x=x;reg.c.u=U_F;reg.c.set=true;
     setReg(reg.hz,1/(2*PI_D*wR*wC),U_HZ);tapeVal("tau",wR*wC,U_NONE);stepTag="fc";stepFilt=0;}
 }
 
 static void vdrop(){
+  if(stepVD==0&&typed())stepVD=1;
   if(stepVD==0&&reg.v.set&&reg.a.set&&reg.dist.set){
     int awg=12;if(reg.answer.set&&reg.answer.u==U_AWG)awg=(int)reg.answer.x;
     double d=wireDrop(reg.a.x,reg.dist.x,awg);setReg(reg.answer,d,U_V);
-    tapeVal("pct",100*d/reg.v.x,U_PCT);tapeVal("AWG3%",(double)awgFor(reg.a.x,reg.dist.x,reg.v.x,3),U_AWG);
+    tapeVal("pct",100*d/reg.v.x,U_PCT);tapeVal("AWG3%",awgD(awgFor(reg.a.x,reg.dist.x,reg.v.x,3)),U_AWG);
     stepTag=useAl?"Al":"Cu";return;
   }
   if(stepVD==0){stepVD=1;stepTag="Vsrc?";tapeAdd("enter Vsrc");return;}
   double x=curValue();
-  if(stepVD==1){wV=x;reg.v.x=x;reg.v.u=U_V;reg.v.set=true;stepTag="A?";tapeVal("V",x,U_V);stepVD=2;entering=false;}
-  else if(stepVD==2){wA=x;reg.a.x=x;reg.a.u=U_A;reg.a.set=true;stepTag="ft?";tapeVal("A",x,U_A);stepVD=3;entering=false;}
-  else if(stepVD==3){wDist=x;reg.dist.x=x;reg.dist.u=U_FT;reg.dist.set=true;stepTag="awg?";tapeVal("ft",x,U_FT);stepVD=4;entering=false;}
+  if(stepVD==1){wV=x;reg.v.x=x;reg.v.u=U_V;reg.v.set=true;stepTag="A?";tapeVal("V",x,U_V);stepVD=2;setEntry(x);}
+  else if(stepVD==2){wA=x;reg.a.x=x;reg.a.u=U_A;reg.a.set=true;stepTag="ft?";tapeVal("A",x,U_A);stepVD=3;setEntry(x);}
+  else if(stepVD==3){wDist=x;reg.dist.x=x;reg.dist.u=U_FT;reg.dist.set=true;stepTag="awg?";tapeVal("ft",x,U_FT);stepVD=4;setEntry(x);}
   else if(stepVD==4){wAwg=(x>=0&&x<=40)?x:12;double d=wireDrop(wA,wDist,(int)wAwg);
     setReg(reg.answer,d,U_V);tapeVal("pct",wV>0?100*d/wV:NAN,U_PCT);
-    tapeVal("AWG3%",(double)awgFor(wA,wDist,wV,3),U_AWG);stepTag="drop";stepVD=0;}
+    tapeVal("AWG3%",awgD(awgFor(wA,wDist,wV,3)),U_AWG);stepTag="drop";stepVD=0;}
 }
 
 static void awgKey(){
-  if(need(reg.a)&&need(reg.dist)&&need(reg.v)){int n=awgFor(reg.a.x,reg.dist.x,reg.v.x,3);setReg(reg.answer,(double)n,U_AWG);tapeVal("DROP",wireDrop(reg.a.x,reg.dist.x,n),U_V);}
+  if(reg.a.set&&reg.dist.set&&reg.v.set&&!typed()){int n=awgFor(reg.a.x,reg.dist.x,reg.v.x,3);if(n<0){setReg(reg.answer,NAN,U_AWG);tapeAdd("needs > 1/0");return;}setReg(reg.answer,(double)n,U_AWG);tapeVal("DROP",wireDrop(reg.a.x,reg.dist.x,n),U_V);}
   else{int n=(int)round(curValue());if(n>=0&&n<=40){setReg(reg.answer,(double)n,U_AWG);tapeVal("cmil",awgCm[n],U_CMIL);}}
 }
 static void cmilShow(){int n=(int)round(curValue());if(n>=0&&n<=40){setReg(reg.answer,awgCm[n],U_CMIL);tapeVal("AWG",n,U_AWG);}else beep();}
@@ -265,36 +274,36 @@ static void parallelC(){if(need(reg.c)&&need(reg.answer))setReg(reg.answer,reg.c
 static void capEnergy(){if(need(reg.c)&&need(reg.v))setReg(reg.answer,0.5*reg.c.x*reg.v.x*reg.v.x,U_W);}
 
 static void motor(){
-  static uint8_t st=0;
+  static uint8_t st=0;if(st==0&&typed())st=1;
   if(st==0&&reg.kv.set&&reg.cells.set){setReg(reg.rpm,reg.kv.x*reg.cells.x*4.2,U_RPM);stepTag="RPM";return;}
   if(st==0){st=1;stepTag="KV?";tapeAdd("enter KV");return;}
   double x=curValue();
-  if(st==1){wKv=x;reg.kv.x=x;reg.kv.u=U_KV;reg.kv.set=true;stepTag="S?";st=2;entering=false;}
+  if(st==1){wKv=x;reg.kv.x=x;reg.kv.u=U_KV;reg.kv.set=true;stepTag="S?";st=2;setEntry(x);}
   else if(st==2){wCells=x;reg.cells.x=x;reg.cells.u=U_CELL;reg.cells.set=true;setReg(reg.rpm,wKv*wCells*4.2,U_RPM);stepTag="RPM";st=0;}
 }
 
 static void gear(){if(!need(reg.ratio))return;if(reg.rpm.set)setReg(reg.answer,reg.rpm.x/reg.ratio.x,U_RPM);else if(reg.torque.set)setReg(reg.answer,reg.torque.x*reg.ratio.x,U_NONE);}
 static void prop(){
-  static uint8_t st=0;
+  static uint8_t st=0;if(st==0&&typed())st=1;
   if(st==0&&reg.kv.set&&reg.cells.set&&reg.diameter.set){
     double rpm=reg.kv.x*reg.cells.x*4.2;double pitch=reg.pitch.set?reg.pitch.x:reg.diameter.x;
     reg.rpm.x=rpm;reg.rpm.u=U_RPM;reg.rpm.set=true;setReg(reg.answer,rpm*pitch*60/63360.0,U_NONE);tapeVal("RPM",rpm,U_RPM);return;
   }
   if(st==0){st=1;stepTag="KV?";tapeAdd("enter KV");return;}
   double x=curValue();
-  if(st==1){wKv=x;reg.kv.x=x;reg.kv.u=U_KV;reg.kv.set=true;stepTag="S?";st=2;entering=false;}
-  else if(st==2){wCells=x;reg.cells.x=x;reg.cells.u=U_CELL;reg.cells.set=true;stepTag="diam?";st=3;entering=false;}
-  else if(st==3){wDiam=x;reg.diameter.x=x;reg.diameter.u=U_IN;reg.diameter.set=true;stepTag="pitch?";st=4;entering=false;}
+  if(st==1){wKv=x;reg.kv.x=x;reg.kv.u=U_KV;reg.kv.set=true;stepTag="S?";st=2;setEntry(x);}
+  else if(st==2){wCells=x;reg.cells.x=x;reg.cells.u=U_CELL;reg.cells.set=true;stepTag="diam?";st=3;setEntry(x);}
+  else if(st==3){wDiam=x;reg.diameter.x=x;reg.diameter.u=U_IN;reg.diameter.set=true;stepTag="pitch?";st=4;setEntry(x);}
   else if(st==4){wPitch=x>0?x:wDiam;double rpm=wKv*wCells*4.2;reg.rpm.x=rpm;reg.rpm.set=true;
     setReg(reg.answer,rpm*wPitch*60/63360.0,U_NONE);tapeVal("RPM",rpm,U_RPM);stepTag="mph";st=0;}
 }
 
 static void battery(){
-  static uint8_t st=0;
+  static uint8_t st=0;if(st==0&&typed())st=1;
   if(st==0&&reg.capacity.set&&reg.cells.set){setReg(reg.energy,reg.capacity.x*reg.cells.x*3.7/1000.0,U_WH);stepTag="Wh";return;}
   if(st==0){st=1;stepTag="mAh?";tapeAdd("enter mAh");return;}
   double x=curValue();
-  if(st==1){wMah=x;reg.capacity.x=x;reg.capacity.set=true;stepTag="S?";st=2;entering=false;}
+  if(st==1){wMah=x;reg.capacity.x=x;reg.capacity.set=true;stepTag="S?";st=2;setEntry(x);}
   else if(st==2){wCells=x;reg.cells.x=x;reg.cells.set=true;setReg(reg.energy,wMah*wCells*3.7/1000.0,U_WH);stepTag="Wh";st=0;}
 }
 
@@ -305,23 +314,24 @@ static void force(){if(need(reg.weight))setReg(reg.answer,reg.weight.x*G_ACC,U_N
 static void mass(){if(need(reg.weight))setReg(reg.answer,reg.weight.x/G_ACC,U_KG);}
 
 static void slope(){
+  if(stepSlope==0&&typed())stepSlope=1;
   if(stepSlope==0&&reg.rise.set&&reg.run.set){double s=reg.rise.x/reg.run.x;
-    setReg(reg.answer,s,U_NONE);setReg(reg.angle,atan2(reg.rise.x,reg.run.x)*180/PI_D,U_DEG);tapeVal("pct",100*s,U_PCT);stepTag="slp";return;}
+    setReg(reg.angle,atan2(reg.rise.x,reg.run.x)*180/PI_D,U_DEG);setReg(reg.answer,s,U_NONE);tapeVal("pct",100*s,U_PCT);stepTag="slp";return;}
   if(stepSlope==0){stepSlope=1;stepTag="rise?";tapeAdd("enter rise");return;}
   double x=curValue();
-  if(stepSlope==1){wRise=x;reg.rise.x=x;reg.rise.u=U_FT;reg.rise.set=true;stepTag="run?";tapeVal("rise",x,U_FT);stepSlope=2;entering=false;}
+  if(stepSlope==1){wRise=x;reg.rise.x=x;reg.rise.u=U_FT;reg.rise.set=true;stepTag="run?";tapeVal("rise",x,U_FT);stepSlope=2;setEntry(x);}
   else if(stepSlope==2){wRun=x;reg.run.x=x;reg.run.u=U_FT;reg.run.set=true;double s=wRun!=0?wRise/wRun:NAN;
-    setReg(reg.answer,s,U_NONE);setReg(reg.angle,atan2(wRise,wRun)*180/PI_D,U_DEG);tapeVal("pct",100*s,U_PCT);stepTag="slp";stepSlope=0;}
+    setReg(reg.angle,atan2(wRise,wRun)*180/PI_D,U_DEG);setReg(reg.answer,s,U_NONE);tapeVal("pct",100*s,U_PCT);stepTag="slp";stepSlope=0;}
 }
 
 static void angleSolve(){if(!need(reg.rise)||!need(reg.run))return;setReg(reg.angle,atan2(reg.rise.x,reg.run.x)*180/PI_D,U_DEG);}
 static void riseFromAngle(){if(!need(reg.run)||!need(reg.angle))return;setReg(reg.rise,reg.run.x*tan(reg.angle.x*PI_D/180),U_FT);}
 static void roof(){
-  static uint8_t st=0;
+  static uint8_t st=0;if(st==0&&typed())st=1;
   if(st==0&&reg.rise.set&&reg.run.set){setReg(reg.answer,hypot(reg.rise.x,reg.run.x),U_FT);tapeVal("pitch",atan2(reg.rise.x,reg.run.x)*180/PI_D,U_DEG);return;}
   if(st==0){st=1;stepTag="rise?";tapeAdd("enter rise");return;}
   double x=curValue();
-  if(st==1){wRise=x;reg.rise.x=x;reg.rise.u=U_FT;reg.rise.set=true;stepTag="run?";st=2;entering=false;}
+  if(st==1){wRise=x;reg.rise.x=x;reg.rise.u=U_FT;reg.rise.set=true;stepTag="run?";st=2;setEntry(x);}
   else if(st==2){wRun=x;reg.run.x=x;reg.run.u=U_FT;reg.run.set=true;
     setReg(reg.answer,hypot(wRise,wRun),U_FT);tapeVal("pitch",atan2(wRise,wRun)*180/PI_D,U_DEG);stepTag="raf";st=0;}
 }
@@ -329,21 +339,22 @@ static void roof(){
 static void stairs(){if(!need(reg.rise)||!need(reg.run))return;setReg(reg.answer,hypot(reg.rise.x,reg.run.x),U_FT);tapeVal("risers",reg.dist.set?ceil(reg.dist.x/reg.rise.x):ceil(reg.rise.x/7.5),U_NONE);}
 static void stairCount(){if(!need(reg.rise))return;setReg(reg.answer,floor(reg.rise.x/7.5),U_NONE);}
 static void board(){
-  static uint8_t st=0;static double t=0,w=0,l=0;
+  static uint8_t st=0;if(st==0&&typed())st=1;static double t=0,w=0,l=0;
   if(st==0&&reg.rise.set&&reg.run.set&&reg.dist.set){setReg(reg.answer,reg.rise.x*reg.run.x*reg.dist.x/12.0,U_FT);stepTag="bf";return;}
   if(st==0){st=1;stepTag="T in?";tapeAdd("enter thickness in");return;}
   double x=curValue();
-  if(st==1){t=x;stepTag="W in?";tapeVal("T",x,U_IN);st=2;entering=false;}
-  else if(st==2){w=x;stepTag="L ft?";tapeVal("W",x,U_IN);st=3;entering=false;}
+  if(st==1){t=x;stepTag="W in?";tapeVal("T",x,U_IN);st=2;setEntry(x);}
+  else if(st==2){w=x;stepTag="L ft?";tapeVal("W",x,U_IN);st=3;setEntry(x);}
   else if(st==3){l=x;setReg(reg.answer,t*w*l/12.0,U_FT);tapeVal("+10%",t*w*l/12.0*1.1,U_FT);stepTag="bf";st=0;}
 }
 
 static void concrete(){if(!need(reg.volume))return;setReg(reg.answer,reg.volume.x/27.0*1.10,U_YD3);}
 // TEST: perim=48 h=8 doors=1 wins=2 coats=2 cov=350 → net=333 gal≈1.90
-// Sequential wizard — each press consumes current entry (no RISE/RUN hijack).
+// Sequential wizard - each press consumes current entry (no RISE/RUN hijack).
 // Steps: 1 perim 2 height 3 doors 4 wins 5 coats 6 coverage → gallons
 // PAINT: first press queues; stamps (rise=perim,run=ht,dist=doors,angle=wins) still work
 static void paint(){
+  if(stepPaint==0&&typed())stepPaint=1;
   if(stepPaint==0&&reg.rise.set&&reg.run.set){
     double doors=reg.dist.set?reg.dist.x:0,wins=reg.angle.set?reg.angle.x:0;
     double net=reg.rise.x*reg.run.x-(doors*21+wins*15);if(net<0)net=0;
@@ -352,15 +363,17 @@ static void paint(){
     setReg(reg.answer,net*coats/cov,U_GAL);tapeVal("NET",net,U_FT);tapeVal("BUY",ceil(net*coats/cov),U_GAL);
     stepTag="gal";return;
   }
+  if(stepPaint==1&&typed()){pPerim=pHt=pDoors=pWins=0;pCoats=1;pCov=350;}
   if(stepPaint==0){pPerim=pHt=pDoors=pWins=0;pCoats=1;pCov=350;stepPaint=1;stepTag="perim?";tapeAdd("enter perim");return;}
   double x=curValue();
-  if(stepPaint==1){pPerim=x;stepTag="ht?";tapeVal("perim",x,U_FT);stepPaint=2;entering=false;}
-  else if(stepPaint==2){pHt=x;stepTag="doors?";tapeVal("ht",x,U_FT);stepPaint=3;entering=false;}
-  else if(stepPaint==3){pDoors=x;stepTag="wins?";tapeVal("doors",x,U_NONE);stepPaint=4;entering=false;}
-  else if(stepPaint==4){pWins=x;stepTag="coats?";tapeVal("wins",x,U_NONE);stepPaint=5;entering=false;}
-  else if(stepPaint==5){pCoats=x>0?x:1;stepTag="cov?";tapeVal("coats",pCoats,U_NONE);stepPaint=6;entering=false;}
+  if(stepPaint>=3&&!typed()){stepPaint=6;x=0;} // bare press after height = finish with defaults
+  if(stepPaint==1){pPerim=x;stepTag="ht?";tapeVal("perim",x,U_FT);stepPaint=2;setEntry(x);}
+  else if(stepPaint==2){pHt=x;stepTag="doors?";tapeVal("ht",x,U_FT);stepPaint=3;setEntry(x);}
+  else if(stepPaint==3){pDoors=typed()?x:0;stepTag="wins?";tapeVal("doors",x,U_NONE);stepPaint=4;setEntry(x);}
+  else if(stepPaint==4){pWins=typed()?x:0;stepTag="coats?";tapeVal("wins",x,U_NONE);stepPaint=5;setEntry(x);}
+  else if(stepPaint==5){pCoats=typed()&&x>0?x:1;stepTag="cov?";tapeVal("coats",pCoats,U_NONE);stepPaint=6;setEntry(x);}
   else if(stepPaint==6){
-    pCov=x>0?x:350;tapeVal("cov",pCov,U_NONE);
+    pCov=typed()&&x>0?x:350;tapeVal("cov",pCov,U_NONE);
     double net=pPerim*pHt-(pDoors*21+pWins*15);if(net<0)net=0;
     double g=net*pCoats/pCov;
     reg.area.x=net;reg.area.u=U_FT;reg.area.set=true;
@@ -381,10 +394,11 @@ static void materialWaste(){setReg(reg.answer,curValue()*1.10,U_NONE);}
 static void panRound(){double d=curValue();setReg(reg.answer,PI_D*d*d/4,U_FT);}
 
 static void bake(){
+  if(stepBake==0&&typed())stepBake=1;
   if(stepBake==0&&reg.flour.set&&reg.hydration.set){setReg(reg.answer,reg.flour.x*reg.hydration.x/100,U_G);stepTag="H2O";return;}
   if(stepBake==0){stepBake=1;stepTag="flour?";tapeAdd("enter flour g");return;}
   double x=curValue();
-  if(stepBake==1){wFlour=x;reg.flour.x=x;reg.flour.u=U_G;reg.flour.set=true;stepTag="hydr%?";tapeVal("flour",x,U_G);stepBake=2;entering=false;}
+  if(stepBake==1){wFlour=x;reg.flour.x=x;reg.flour.u=U_G;reg.flour.set=true;stepTag="hydr%?";tapeVal("flour",x,U_G);stepBake=2;setEntry(x);}
   else if(stepBake==2){wHydr=x;reg.hydration.x=x;reg.hydration.u=U_PCT;reg.hydration.set=true;
     setReg(reg.answer,wFlour*wHydr/100,U_G);tapeVal("dough",wFlour+wFlour*wHydr/100,U_G);stepTag="H2O";stepBake=0;}
 }
@@ -395,7 +409,7 @@ static void recipePct(){if(need(reg.total)&&need(reg.flour))setReg(reg.answer,re
 static void density(){if(need(reg.total)&&need(reg.servings))setReg(reg.answer,reg.total.x/reg.servings.x,U_G);}
 
 static void loan(){
-  static uint8_t st=0;
+  static uint8_t st=0;if(st==0&&typed())st=1;
   if(st==0&&reg.principal.set&&reg.rate.set&&reg.term.set){
     double P=reg.principal.x,rm=reg.rate.x/100/12,n=reg.term.x;
     double pay=fabs(rm)<1e-15?P/n:P*rm*pow(1+rm,n)/(pow(1+rm,n)-1);
@@ -404,8 +418,8 @@ static void loan(){
   }
   if(st==0){st=1;stepTag="PV?";tapeAdd("enter principal");return;}
   double x=curValue();
-  if(st==1){wP=x;reg.principal.x=x;reg.principal.u=U_DOLLAR;reg.principal.set=true;stepTag="APR%?";tapeVal("P",x,U_DOLLAR);st=2;entering=false;}
-  else if(st==2){wRate=x;reg.rate.x=x;reg.rate.u=U_PCT;reg.rate.set=true;stepTag="mo?";tapeVal("APR",x,U_PCT);st=3;entering=false;}
+  if(st==1){wP=x;reg.principal.x=x;reg.principal.u=U_DOLLAR;reg.principal.set=true;stepTag="APR%?";tapeVal("P",x,U_DOLLAR);st=2;setEntry(x);}
+  else if(st==2){wRate=x;reg.rate.x=x;reg.rate.u=U_PCT;reg.rate.set=true;stepTag="mo?";tapeVal("APR",x,U_PCT);st=3;setEntry(x);}
   else if(st==3){wN=x;reg.term.x=x;reg.term.u=U_NONE;reg.term.set=true;
     double rm=wRate/100/12,pay=fabs(rm)<1e-15?wP/wN:wP*rm*pow(1+rm,wN)/(pow(1+rm,wN)-1);
     reg.payment.x=pay;reg.payment.u=U_DOLLAR;reg.payment.set=true;reg.interest.x=pay*wN-wP;reg.interest.u=U_DOLLAR;reg.interest.set=true;
@@ -440,7 +454,7 @@ static void trig(Act a){
 }
 static void hyper(Act a){double x=curValue();setEntry(a==A_SINH?sinh(x):a==A_COSH?cosh(x):tanh(x));}
 static void statAdd(){double x=curValue();if(stN==0){stMin=stMax=x;stSum=0;}if(x<stMin)stMin=x;if(x>stMax)stMax=x;stSum+=x;stN++;tapeVal("n",stN,U_NONE);setEntry(x);stepTag="STAT";}
-static void statMinMax(){if(stN==0){beep();return;}char b[48];snprintf(b,48,"min%.4g max%.4g",stMin,stMax);tapeAdd(b);setEntry(stMin);tapeVal("Σ",stSum,U_NONE);tapeVal("μ",stSum/stN,U_NONE);}
+static void statMinMax(){if(stN==0){beep();return;}char b[48];snprintf(b,48,"min%.4g max%.4g",stMin,stMax);tapeAdd(b);setEntry(stMin);tapeVal("sum",stSum,U_NONE);tapeVal("mean",stSum/stN,U_NONE);}
 static void statClr(){stN=0;stMin=stMax=stSum=0;tapeAdd("STAT CLR");}
 
 // === DISPATCH ===
@@ -495,124 +509,197 @@ static void doAct(Act a){
   case A_DEG2RAD:setEntry(x*PI_D/180);break;case A_RAD2DEG:setEntry(x*180/PI_D);break;
   case A_SINH:hyper(A_SINH);break;case A_COSH:hyper(A_COSH);break;case A_TANH:hyper(A_TANH);break;
   case A_SIGFIG:{if(x==0)setEntry(0);else{double p=pow(10,3-floor(log10(fabs(x))));setEntry(round(x*p)/p);}}break;
-  case A_SIPREFIX:siPrefix();break;case A_ENG:engMode=!engMode;tapeAdd(engMode?"ENG ON":"ENG OFF");setEntry(curValue());break;
+  case A_SIPREFIX:siPrefix();break;
+  case A_MV:setReg(reg.v,x*1e-3,U_V);break;case A_MA:setReg(reg.a,x*1e-3,U_A);break;case A_KOHM:setReg(reg.r,x*1e3,U_OHM);break;
+  case A_UF:setReg(reg.c,x*1e-6,U_F);break;case A_MH:setReg(reg.l,x*1e-3,U_H);break;
+  case A_ALCU:useAl=!useAl;tapeAdd(useAl?"wire: ALUMINUM":"wire: COPPER");break;
+  case A_TEMPCONV:if(reg.temp.set&&!typed()){if(reg.temp.u==U_FAH)setReg(reg.temp,(reg.temp.x-32)*5/9,U_C);else setReg(reg.temp,reg.temp.x*9/5+32,U_FAH);}
+    else{tapeVal("C",x,U_C);setReg(reg.temp,x*9/5+32,U_FAH);}break;case A_ENG:engMode=!engMode;tapeAdd(engMode?"ENG ON":"ENG OFF");setEntry(curValue());break;
   default:break;
   }
   if(shift&&a!=A_NONE&&a!=A_ADD&&a!=A_SUB&&a!=A_MUL&&a!=A_DIV&&a!=A_EQ)shift=false;
   mark();
 }
 
-// === UI ===
-static void drawKey(int x,int y,int w,int h,const Key&k,bool sh){
-  // skeuomorphic raised key: face + light top edge + dark bottom edge
-  uint16_t face=sh?0x580B:0x19C7;      // purple when 2nd, teal-dark otherwise
-  uint16_t hi=sh?0xA81F:0x3A8A;        // highlight
-  uint16_t lo=sh?0x3006:0x0C63;        // shadow
-  M5.Display.fillRoundRect(x,y,w,h,5,face);
-  M5.Display.drawFastHLine(x+2,y+1,w-4,hi);
-  M5.Display.drawFastHLine(x+2,y+h-2,w-4,lo);
-  M5.Display.drawFastVLine(x+1,y+2,h-4,hi);
-  M5.Display.drawFastVLine(x+w-2,y+2,h-4,lo);
-  const char*s=sh&&k.s[0]?k.s:k.p;
-  M5.Display.setTextSize(1);
-  M5.Display.setTextColor(sh?0xAF27:0xFFFF); // lime label when 2nd
-  int tw=M5.Display.textWidth(s);M5.Display.setCursor(x+(w-tw)/2,y+6);M5.Display.print(s);
-  if(k.s[0]&&!sh){M5.Display.setTextColor(0xAF27);M5.Display.setCursor(x+3,y+h-11);M5.Display.print("2");}
+// === UI === skeuomorphic renderer (2005 body, 2010 pixel-perfect gloss)
+// Everything is drawn into a PSRAM canvas, then pushed in one blit (no flicker).
+// Geometry (touch zones) is unchanged: LCD 0..54, F-keys 56..122, numpad 128..216, bar 218..240.
+static M5Canvas canvas(&M5.Display);
+static bool useCanvas=false;
+static int pressId=-1;static unsigned long pressUntil=0;   // key-down animation: 0-11 fkeys, 100+ numpad, 200+ bar
+
+static constexpr uint16_t RGB(uint8_t r,uint8_t g,uint8_t b){return (uint16_t)(((r&0xF8)<<8)|((g&0xFC)<<3)|(b>>3));}
+static uint16_t mix(uint16_t a,uint16_t b,int t){ // t 0..256
+  int ar=a>>11,ag=(a>>5)&63,ab=a&31,br=b>>11,bg=(b>>5)&63,bb=b&31;
+  return (uint16_t)(((ar+(br-ar)*t/256)<<11)|((ag+(bg-ag)*t/256)<<5)|(ab+(bb-ab)*t/256));
 }
-static void drawRegFlags(){
-  M5.Display.setTextSize(1);
-  int x=188;
-  const char* labs[]={"V","A","R","P","C","L","f","d"};
-  Value* vs[]={&reg.v,&reg.a,&reg.r,&reg.p,&reg.c,&reg.l,&reg.hz,&reg.dist};
-  for(int i=0;i<8;i++){
-    if(!vs[i]->set)continue;
-    M5.Display.fillRoundRect(x,20,10,12,2,0x038E);
-    M5.Display.setTextColor(0xFFFF);M5.Display.setCursor(x+2,22);M5.Display.print(labs[i]);
-    x+=12;
+static constexpr uint16_t WHITE=0xFFFF,BLACK=0x0000;
+// palette (from MantisCalc logo + mockup)
+static constexpr uint16_t LCD_T=RGB(196,212,186),LCD_B=RGB(158,178,150),LCD_INK=RGB(24,36,32),LCD_GHOST=RGB(166,186,158),LCD_DIM=RGB(96,114,100);
+struct KeyPal{uint16_t top,bot,edge,ink;};
+static constexpr KeyPal P_FN ={RGB(66,152,152),RGB(14,72,76), RGB(4,28,30), WHITE};
+static constexpr KeyPal P_DIG={RGB(92,104,112),RGB(34,42,48), RGB(10,14,16),WHITE};
+static constexpr KeyPal P_OP ={RGB(156,74,166),RGB(68,12,78), RGB(30,2,36), WHITE};
+static constexpr KeyPal P_EQ ={RGB(218,242,96),RGB(116,156,8), RGB(44,64,0), RGB(20,34,0)};
+static constexpr uint16_t LIME=RGB(196,232,40),LIME_DIM=RGB(150,178,60);
+
+template<class G> static void gradRR(G&g,int x,int y,int w,int h,int r,uint16_t top,uint16_t bot){
+  if(h<=0||w<=0)return;
+  for(int i=0;i<h;i++){
+    int in=0,dy=-1;
+    if(i<r)dy=r-i;else if(i>=h-r)dy=i-(h-r)+1;
+    if(dy>0){float d=dy-0.5f;in=r-(int)(sqrtf((float)(r*r)-d*d)+0.5f);}
+    g.drawFastHLine(x+in,y+i,w-2*in,h>1?mix(top,bot,i*256/(h-1)):top);
   }
+}
+template<class G> static void shadowText(G&g,int x,int y,const char*s,uint16_t ink,uint16_t shade){
+  g.setTextColor(shade);g.setCursor(x+1,y+1);g.print(s);g.setTextColor(ink);g.setCursor(x,y);g.print(s);
+}
+template<class G> static void centerText(G&g,int x,int w,int y,const char*s,uint16_t ink,uint16_t shade){
+  shadowText(g,x+(w-(int)g.textWidth(s))/2,y,s,ink,shade);
+}
+// Glossy domed key. Pressed: sinks 1px, shadow vanishes, gloss dims.
+template<class G> static void glossKey(G&g,int x,int y,int w,int h,const KeyPal&p,bool down){
+  const int r=5;
+  if(!down)gradRR(g,x+1,y+2,w,h,r,RGB(8,10,12),RGB(4,4,6));          // drop shadow
+  if(down)y+=1;
+  gradRR(g,x,y,w,h,r,p.edge,p.edge);                                   // rim
+  uint16_t t=down?mix(p.top,BLACK,70):p.top,b=down?mix(p.bot,BLACK,40):p.bot;
+  gradRR(g,x+1,y+1,w-2,h-2,r-1,t,b);                                   // body
+  if(!down){
+    int gh=(h-4)/2;
+    gradRR(g,x+2,y+2,w-4,gh,r-2,mix(t,WHITE,52),mix(t,WHITE,10));     // upper gloss lens
+    g.drawFastHLine(x+r,y+1,w-2*r,mix(t,WHITE,170));                   // specular edge
+  }
+  g.drawFastHLine(x+r,y+h-2,w-2*r,mix(b,BLACK,90));                    // lower lip
+}
+
+// --- 7-segment LCD digits (11x20 cell, 14px pitch, crisp at native res)
+static uint8_t segMask(char c){
+  switch(c){case '0':return 63;case '1':return 6;case '2':return 91;case '3':return 79;case '4':return 102;
+  case '5':return 109;case '6':return 125;case '7':return 7;case '8':return 127;case '9':return 111;
+  case '-':return 64;case 'E':return 121;case 'r':return 80;default:return 0;}
+}
+template<class G> static void seg7(G&g,int x,int y,uint8_t m,uint16_t c){
+  if(m&1)g.fillRect(x+2,y,7,2,c);       if(m&2)g.fillRect(x+9,y+2,2,7,c);   if(m&4)g.fillRect(x+9,y+11,2,7,c);
+  if(m&8)g.fillRect(x+2,y+18,7,2,c);    if(m&16)g.fillRect(x,y+11,2,7,c);   if(m&32)g.fillRect(x,y+2,2,7,c);
+  if(m&64)g.fillRect(x+2,y+9,7,2,c);
+}
+template<class G> static void lcdNumber(G&g,const char*src,int rightX,int y){
+  char s[48];int n=0;               // normalise: e->E, drop '+', ERR->Err
+  for(const char*p=src;*p&&n<46;p++){char c=*p;if(c=='+')continue;if(c=='e')c='E';if(c=='R')c='r';s[n++]=c;}s[n]=0;
+  const int CELLS=16,P=14;
+  int cells=0;for(int i=0;i<n;i++)if(s[i]!='.')cells++;
+  int skip=cells>CELLS?cells-CELLS:0;          // overflow: show rightmost cells
+  int x0=rightX-CELLS*P;
+  for(int k=0;k<CELLS;k++){seg7(g,x0+k*P,y,127,LCD_GHOST);g.fillRect(x0+k*P+12,y+18,2,2,LCD_GHOST);}
+  int k=CELLS-(cells-skip),seen=0;
+  for(int i=0;i<n;i++){
+    if(s[i]=='.'){if(seen>skip&&k>0)g.fillRect(x0+(k-1)*P+12,y+18,2,2,LCD_INK);continue;}
+    if(seen++<skip)continue;
+    seg7(g,x0+k*P,y,segMask(s[i]),LCD_INK);k++;
+  }
+}
+template<class G> static void annun(G&g,int x,int y,const char*s,bool on,bool inv=false){
+  if(inv&&on){int w=g.textWidth(s)+4;g.fillRoundRect(x-2,y-1,w,10,2,LCD_INK);g.setTextColor(LCD_T);}
+  else g.setTextColor(on?LCD_INK:LCD_GHOST);
+  g.setCursor(x,y);g.print(s);
+}
+
+template<class G> static void bezel(G&g){
+  for(int y=0;y<H;y++){                                  // brushed gunmetal, deterministic grain
+    uint32_t h=(uint32_t)y*2654435761u;int grain=(int)((h>>27)&7)-3;
+    int v=58-y/10+grain;if(v<18)v=18;
+    g.drawFastHLine(0,y,W,RGB(v,v+4,v+8));
+  }
+}
+template<class G> static void lcdPanel(G&g,int x,int y,int w,int h){
+  g.fillRoundRect(x-1,y-1,w+2,h+2,6,RGB(8,10,12));      // recess
+  g.drawFastHLine(x+4,y+h+1,w-8,RGB(120,128,136));       // lit lower lip of the bezel cut
+  gradRR(g,x+1,y+1,w-2,h-2,4,LCD_T,LCD_B);               // glass
+  g.drawFastHLine(x+3,y+1,w-6,RGB(112,126,108));         // inner top shadow
+  g.drawFastVLine(x+1,y+3,h-6,RGB(132,148,126));
+}
+template<class G> static void drawFnKey(G&g,int i,const Key&k){
+  int x=(i%6)*53+1,y=FUNC_Y+(i/6)*34;bool down=pressId==i;
+  glossKey(g,x,y,51,31,P_FN,down);if(down)y++;
+  g.setTextSize(1);
+  const char*big=shift&&k.s[0]?k.s:k.p,*small=shift?k.p:k.s;
+  if(small&&small[0])centerText(g,x,51,y+4,small,shift?RGB(150,190,190):LIME,RGB(0,40,42));
+  centerText(g,x,51,y+17,big,shift?LIME:WHITE,RGB(0,30,32));
+}
+template<class G> static void drawNumKey(G&g,int i,const char*p,const char*s){
+  int row=i/4,col=i%4,x=2+col*79,y=NUM_Y+row*22;bool down=pressId==100+i;
+  const KeyPal&pal=i==14?P_EQ:(col==3?P_OP:P_DIG);
+  glossKey(g,x,y,76,20,pal,down);if(down)y++;
+  g.setTextSize(1);
+  uint16_t shade=i==14?RGB(230,250,160):BLACK;
+  if(shift){centerText(g,x,76,y+6,s,i==14?RGB(60,0,70):LIME,shade);g.setTextColor(mix(pal.ink,pal.bot,140));g.setCursor(x+5,y+6);g.print(p);}
+  else{centerText(g,x,76,y+6,p,pal.ink,shade);g.setTextColor(i==14?RGB(70,10,80):LIME_DIM);g.setCursor(x+5,y+6);g.print(s);}
+}
+template<class G> static void barPill(G&g,int id,int x,int w,const char*s,bool lit){
+  bool down=pressId==200+id;int y=BAR_Y+3+(down?1:0);
+  g.fillRoundRect(x,y,w,17,8,RGB(10,12,14));                                    // engraved slot
+  gradRR(g,x+1,y+1,w-2,15,7,lit?RGB(130,40,140):RGB(56,64,72),lit?RGB(64,8,72):RGB(26,30,34));
+  if(!down)g.drawFastHLine(x+8,y+2,w-16,lit?RGB(190,110,200):RGB(100,110,118));
+  g.drawFastHLine(x+8,y+17,w-16,RGB(96,104,112));
+  g.setTextSize(1);centerText(g,x,w,y+5,s,lit?LIME:RGB(220,226,230),BLACK);
+}
+template<class G> static void drawBar(G&g,bool help){
+  g.drawFastHLine(0,BAR_Y,W,RGB(14,16,18));g.drawFastHLine(0,BAR_Y+1,W,RGB(84,92,100));
+  char a[16],c[16];
+  snprintf(a,16,"< %s",pageNames[(page+5)%6]);snprintf(c,16,"%s >",pageNames[(page+1)%6]);
+  barPill(g,0,6,92,a,false);
+  barPill(g,1,118,84,help?"EXIT":"2ND",!help&&shift);
+  barPill(g,2,222,92,c,false);
+}
+template<class G> static void drawAll(G&g){
+  bezel(g);
+  if(helpMode){
+    lcdPanel(g,4,3,312,210);
+    g.fillRoundRect(8,7,304,13,3,LCD_INK);g.setTextSize(1);g.setTextColor(LCD_T);
+    g.setCursor(12,10);g.printf("GUIDE  %s  %d/6",pageNames[page],page+1);
+    g.setTextColor(LCD_INK);
+    for(int i=0,y=26;i<14;i++){const char*l=helpText[page][i];if(!l||!l[0])continue;g.setCursor(10,y);g.print(l);y+=13;}
+    drawBar(g,true);return;
+  }
+  // --- LCD
+  lcdPanel(g,4,2,312,51);
+  g.setTextSize(1);
+  annun(g,9,6,pageNames[page],true,true);
+  int ax=13+g.textWidth(pageNames[page]);
+  annun(g,ax,6,"2ND",shift,true);ax+=24;
+  annun(g,ax,6,"M",memory!=0);ax+=10;
+  annun(g,ax,6,"ENG",engMode);ax+=22;
+  if(page==1){annun(g,ax,6,useAl?"Al":"Cu",true);ax+=16;}
+  if(stepTag[0]){annun(g,ax,6,stepTag,true,true);}
+  if(page==1){                                            // ELEC register annunciators
+    const char*labs[]={"V","A","R","P","C","L","f","d"};
+    Value*vs[]={&reg.v,&reg.a,&reg.r,&reg.p,&reg.c,&reg.l,&reg.hz,&reg.dist};
+    for(int i=0;i<8;i++)annun(g,262+i*7,6,labs[i],vs[i]->set);
+  }
+  if(op){char a[20],b[26];fmt(cur,a,sizeof a);snprintf(b,sizeof b,"%s %c",a,op=='%'?'m':op);annun(g,9,22,b,true);}
+  char n[40];
+  if(entering)snprintf(n,sizeof n,"%s",entry);else fmt(curValue(),n,sizeof n);
+  lcdNumber(g,n,310,15);
+  g.drawFastHLine(8,38,304,LCD_GHOST);                    // tape line inside the glass
+  if(tapeCount>0){g.setTextColor(LCD_INK);g.setCursor(9,42);g.print(tape[0]);}
+  // --- keys
+  for(int i=0;i<12;i++)drawFnKey(g,i,pages[page][i]);
+  static const char*nums[16]={"7","8","9","/","4","5","6","*","1","2","3","-","0",".","=","+"};
+  static const char*secs[16]={"pi","e","%","^","BS","+/-","ABS","mod","1/x","ANS","EE","d%","CLR","MR","MS","MC"};
+  for(int i=0;i<16;i++)drawNumKey(g,i,nums[i],secs[i]);
+  drawBar(g,false);
 }
 static void draw(){
   if(!dirty)return;dirty=false;
-  if(helpMode){
-    M5.Display.fillScreen(0x08C3);
-    // full-screen guide
-    M5.Display.fillRect(0,0,W,24,accents[page]);
-    M5.Display.setTextColor(0xFFFF);M5.Display.setTextSize(1);
-    M5.Display.setCursor(4,6);
-    M5.Display.printf("GUIDE  %s  %d/6",pageNames[page],page+1);
-    M5.Display.setTextColor(0xAF27);
-    int y=30;
-    for(int i=0;i<14;i++){
-      const char* line=helpText[page][i];
-      if(!line||!line[0])continue;
-      M5.Display.setCursor(6,y);M5.Display.print(line);
-      y+=13;if(y>BAR_Y-6)break;
-    }
-    // labels ABOVE the physical A B C buttons
-    M5.Display.fillRect(0,BAR_Y,W,H-BAR_Y,0x0C63);
-    M5.Display.drawFastHLine(0,BAR_Y,W,0x038E);
-    M5.Display.setTextColor(0xFFFF);M5.Display.setTextSize(1);
-    // three zones aligned to Core2 buttons
-    M5.Display.fillRoundRect(8,BAR_Y+3,70,18,4,0x19C7);
-    M5.Display.setCursor(18,BAR_Y+7);M5.Display.print("< Prev");
-    M5.Display.fillRoundRect(125,BAR_Y+3,70,18,4,0x580B);
-    M5.Display.setTextColor(0xAF27);
-    M5.Display.setCursor(140,BAR_Y+7);M5.Display.print("Exit");
-    M5.Display.setTextColor(0xFFFF);
-    M5.Display.fillRoundRect(242,BAR_Y+3,70,18,4,0x19C7);
-    M5.Display.setCursor(258,BAR_Y+7);M5.Display.print("Next >");
-    return;
-  }
-  M5.Display.fillScreen(0x08C3);
-  M5.Display.fillRect(0,0,W,TOP,accents[page]);
-  M5.Display.setTextColor(0xFFFF);M5.Display.setTextSize(1);
-  M5.Display.setCursor(4,3);
-  M5.Display.printf("%s",pageNames[page]);
-  if(shift){M5.Display.fillRoundRect(70,2,28,12,2,0x580B);M5.Display.setCursor(74,4);M5.Display.print("2ND");M5.Display.setTextColor(0xAF27);M5.Display.setCursor(102,4);M5.Display.print("tap=GUIDE");M5.Display.setTextColor(0xFFFF);}
-  if(engMode){M5.Display.setCursor(104,3);M5.Display.print("ENG");}
-  if(stepTag[0]){M5.Display.setCursor(140,3);M5.Display.print(stepTag);}
-  if(useAl&&page==0){M5.Display.setCursor(170,3);M5.Display.print("Al");}
-  char n[32];fmt(curValue(),n,sizeof n);
-  M5.Display.setTextSize(2);M5.Display.setCursor(4,14);M5.Display.print(n);
-  drawRegFlags();
-  M5.Display.fillRect(0,TAPE_Y,W,TAPE_H,0x0C63);
-  M5.Display.setTextSize(1);M5.Display.setTextColor(0x9CD3);
-  for(int i=0;i<2&&i<tapeCount;i++){M5.Display.setCursor(4,TAPE_Y+1+i*8);M5.Display.print(tape[i]);}
-  for(int i=0;i<12;i++){int row=i/6,col=i%6;drawKey(col*53+1,FUNC_Y+row*34,51,32,pages[page][i],shift);}
-  const char*nums[16]={"7","8","9","/","4","5","6","*","1","2","3","-","0",".","=","+"};
-  const char*secs[16]={"pi","e","%","^","BS","+/-","ABS","mod","1/x","ANS","EE","d%","CLR","MR","MS","MC"};
-  for(int i=0;i<16;i++){
-    int row=i/4,col=i%4,x=2+col*79,y=NUM_Y+row*22;
-    bool isOp=(i==3||i==7||i==11||i==15||i==14);
-    uint16_t face=shift?0x580B:(isOp?0x038E:0x19C7);
-    uint16_t hi=shift?0xA81F:(isOp?0x04D1:0x3A8A);
-    uint16_t lo=shift?0x3006:(isOp?0x01C6:0x0C63);
-    M5.Display.fillRoundRect(x,y,76,20,4,face);
-    M5.Display.drawFastHLine(x+2,y+1,72,hi);
-    M5.Display.drawFastHLine(x+2,y+18,72,lo);
-    M5.Display.setTextColor(shift?0xAF27:0xFFFF);M5.Display.setTextSize(1);
-    const char*lab=shift?secs[i]:nums[i];
-    int tw=M5.Display.textWidth(lab);M5.Display.setCursor(x+(76-tw)/2,y+4);M5.Display.print(lab);
-  }
-  M5.Display.fillRect(0,BAR_Y,W,H-BAR_Y,0x0C63);
-  M5.Display.drawFastHLine(0,BAR_Y,W,0x038E);
-  M5.Display.setTextColor(0xFFFF);M5.Display.setTextSize(1);
-  M5.Display.fillRoundRect(8,BAR_Y+4,60,16,4,0x19C7);
-  M5.Display.drawFastHLine(10,BAR_Y+5,56,0x3A8A);
-  M5.Display.setCursor(22,BAR_Y+7);M5.Display.print("< A");
-  M5.Display.fillRoundRect(130,BAR_Y+4,60,16,4,shift?0x580B:0x19C7);
-  M5.Display.drawFastHLine(132,BAR_Y+5,56,shift?0xA81F:0x3A8A);
-  M5.Display.setTextColor(shift?0xAF27:0xFFFF);
-  M5.Display.setCursor(140,BAR_Y+7);M5.Display.print(shift?"2ND*":"B 2ND");
-  M5.Display.setTextColor(0xFFFF);
-  M5.Display.fillRoundRect(252,BAR_Y+4,60,16,4,0x19C7);
-  M5.Display.drawFastHLine(254,BAR_Y+5,56,0x3A8A);
-  M5.Display.setCursor(266,BAR_Y+7);M5.Display.print("C >");
+  if(useCanvas){drawAll(canvas);canvas.pushSprite(0,0);}else drawAll(M5.Display);
 }
+static void pressFx(int id){pressId=id;pressUntil=millis()+110;mark();}
 static void touch(){
-  auto t=M5.Touch.getDetail();if(!t.isPressed())return;
-  if(millis()-lastTouch<110)return;lastTouch=millis();
-  int x=t.x,y=t.y;vib();
+  auto t=M5.Touch.getDetail();if(!t.wasPressed())return;
+  lastTouch=millis();
+  int x=t.x,y=t.y;if(y>=H||x<0||x>=W)return;vib();
   // 2ND + tap header opens on-device guide for this page
   if(y<TOP){
     if(shift||helpMode){helpMode=!helpMode;helpScroll=0;shift=false;vib();mark();}
@@ -632,20 +719,20 @@ static void touch(){
     mark();return;
   }
   if(y>=BAR_Y){
-    if(x<106){page=(page+5)%6;clearEntry();shift=false;helpMode=false;}
-    else if(x>212){page=(page+1)%6;clearEntry();shift=false;helpMode=false;}
-    else shift=!shift;
+    if(x<106){pressFx(200);page=(page+5)%6;clearEntry();shift=false;helpMode=false;}
+    else if(x>212){pressFx(202);page=(page+1)%6;clearEntry();shift=false;helpMode=false;}
+    else{pressFx(201);shift=!shift;}
     mark();return;
   }
   if(y>=FUNC_Y&&y<FUNC_Y+68){
-    int col=x/53,row=(y-FUNC_Y)/34,i=row*6+col;
-    if(i>=0&&i<12){Key&k=pages[page][i];doAct(shift&&k.b!=A_NONE?k.b:k.a);}
+    int col=x/53;if(col>5)col=5;int row=(y-FUNC_Y)/34,i=row*6+col;
+    if(i>=0&&i<12){pressFx(i);Key&k=pages[page][i];doAct(shift&&k.b!=A_NONE?k.b:k.a);}
     return;
   }
   if(y>=NUM_Y){
     int row=(y-NUM_Y)/22,col=x/79;
     if(row<4&&col<4){
-      int i=row*4+col;
+      int i=row*4+col;pressFx(100+i);
       if(shift){
         switch(i){
           case 0:doAct(A_PI);break;case 1:doAct(A_E);break;case 2:doAct(A_PERCENT);break;case 3:doAct(A_POW);break;
@@ -685,6 +772,8 @@ static void splash(){
 void setup(){
   auto cfg=M5.config();M5.begin(cfg);
   M5.Display.setRotation(1);M5.Display.setTextWrap(false);M5.Speaker.setVolume(28);
+  canvas.setColorDepth(16);canvas.setPsram(true);useCanvas=canvas.createSprite(W,H)!=nullptr;
+  if(useCanvas)canvas.setTextWrap(false);
   initAwg();splash();dirty=true;draw();
 }
 void loop(){
@@ -692,19 +781,20 @@ void loop(){
   if(M5.BtnA.wasPressed()){
     if(helpMode){page=(page+5)%6;helpScroll=0;}
     else{page=(page+5)%6;clearEntry();shift=false;}
-    vib();mark();
+    pressFx(200);vib();mark();
   }
   if(M5.BtnC.wasPressed()){
     if(helpMode){page=(page+1)%6;helpScroll=0;}
     else{page=(page+1)%6;clearEntry();shift=false;}
-    vib();mark();
+    pressFx(202);vib();mark();
   }
   if(M5.BtnB.wasPressed()){
     if(helpMode)helpMode=false;
     else shift=!shift;
-    vib();mark();
+    pressFx(201);vib();mark();
   }
   touch();
+  if(pressId>=0&&(long)(millis()-pressUntil)>=0){pressId=-1;mark();}
   static unsigned long last=0;
   if(dirty||millis()-last>200){draw();last=millis();}
   delay(4);

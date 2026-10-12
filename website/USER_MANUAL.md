@@ -90,20 +90,20 @@ OHM/PWR     → 1800 W
 | **VOLTS** | mV | Stamp volts; 2ND scales current entry as millivolts into V register |
 | **AMPS** | mA | Stamp amps; 2ND → milliamps |
 | **OHMS** | kOhm | Stamp ohms; 2ND → kilohms |
-| **WATTS** | dBm | Stamp watts; 2ND → 20·log₁₀ of magnitude (dB-ish) |
+| **WATTS** | dB | Stamp watts; 2ND → 20·log₁₀ of entry (dB) |
 | **FARAD** | uF | Stamp farads; 2ND → microfarads |
 | **Hz** | wave | Stamp frequency; 2ND → wavelength (c/f) in metres |
+| **HENRY** | mH | Stamp inductance (H); 2ND → millihenries. Needed for XL/XC and RLC. |
 
 ### Tool keys
 
 | Primary | 2ND | How to use |
 |---------|-----|------------|
-| **DIST** | ft-in | Stamp one-way wire length (ft). 2ND converts ft↔in (and related length steps on CONVERT). |
+| **DIST** | PF | Stamp one-way wire length (ft). **2ND PF:** needs P, V, A → power factor P/(V·I). |
 | **OHM/PWR** | XL/XC | **Sequential.** Needs any two of V,I,R (or P). Press repeatedly: (1) solve missing V/I/R (2) power (3) R from P (4) V or I from P. **2ND:** reactance — needs Hz + L or C → XL or XC. |
-| **VDROP** | Al/Cu | **Sequential.** Needs V (source), A, DIST (ft). Optional: stamp AWG into answer first. Steps: (1) voltage drop (2) % drop (3) AWG for ≤3% (4) AWG for ≤1%. **2ND on CONVERT while on ELEC** toggles copper vs aluminum (K=12.9 vs 21.2). Header shows `Al` when aluminum. |
+| **VDROP** | Al/Cu | **Sequential.** Needs V (source), A, DIST (ft). Optional: stamp AWG into answer first. Steps: (1) voltage drop (2) % drop (3) AWG for ≤3% (4) AWG for ≤1%. **2ND (Al/Cu)** toggles copper vs aluminum (K=12.9 vs 21.2). Header shows `Al` when aluminum. |
 | **FILT** | RLC | Needs R and C. Steps: (1) fc = 1/(2πRC) + tape τ (2) τ=RC (3) 0.693·RC. **2ND:** resonant f = 1/(2π√(LC)) — needs L and C. |
 | **AWG** | cmil | With A+DIST+V set → recommended AWG for 3% + tape drop. Else enter gauge number → stamp AWG and tape circular mils. **2ND:** enter AWG → show cmil only. |
-| **dB** | PF | Primary: 20·log₁₀(\|x\|). **2ND PF:** needs P, V, A → power factor P/(V·I). |
 
 **Test vector:** 120 V, 15 A, 75 ft, 14 AWG → ~7.07 V drop, ~5.9%. Required AWG for 3% ≈ 10–11.
 
@@ -164,7 +164,7 @@ OHM/PWR     → 1800 W
 | **BAKE** | next | Sequential baker helpers: total → water from hydr → hydr from total → per serving. |
 | **RECIPE** | scale | total/servings. 2ND recipe %. |
 | **DENS** | g/cup | per-serving mass; 2ND CONVERT. |
-| **CONV** | chain | **Volume chain** (press repeatedly): cup → tbsp → tsp → mL → L → gal. Also C↔F if temp set. |
+| **CONV** | C<>F | **Volume chain** (press repeatedly): cup → tbsp → tsp → mL → L → gal. **2ND:** typed °C → °F, or toggles the TEMP register C↔F. |
 | **AREA** | pan | Stamp area; 2ND round pan area from diameter. |
 | **VOL** | pan | Stamp volume; 2ND cylinder/pan volume. |
 
@@ -210,7 +210,7 @@ OHM/PWR     → 1800 W
 ## 10. Workflow recipes
 
 **Wire sizing**  
-`source V` → VOLTS · `amps` → AMPS · `one-way ft` → DIST · optional gauge → AWG · VDROP ×3 for drop / % / required AWG. Toggle Al with CONVERT 2ND on ELEC.
+`source V` → VOLTS · `amps` → AMPS · `one-way ft` → DIST · optional gauge → AWG · VDROP ×3 for drop / % / required AWG. Toggle Al with VDROP 2ND.
 
 **RC low-pass**  
 `R` → OHMS · `C` → FARAD (or uF via 2ND) · FILT.
