@@ -54,7 +54,7 @@ struct touch_detail_t {
 }
 struct MockTouch { m5::touch_detail_t d; m5::touch_detail_t getDetail(int = 0) { return d; } };
 struct MockBtn { bool p = false; bool wasPressed() const { return p; } };
-struct MockSpeaker { int beeps = 0; void tone(float, uint32_t = 0) { beeps++; } void setVolume(int) {} };
+struct MockSpeaker { int beeps = 0; void tone(float, uint32_t = 0) { beeps++; } bool playRaw(const int16_t*, size_t, uint32_t = 44100, bool = false, uint32_t = 1, int = -1, bool = false) { return true; } void setVolume(int) {} };
 struct MockPower { int vib = 0; void setVibration(uint8_t l) { vib = l; } };
 struct MockCfg {};
 struct MockM5 {
@@ -64,3 +64,9 @@ struct MockM5 {
   void update() {}
 };
 inline MockM5 M5;
+// Mirror M5GFX's global color names so name clashes fail here, not on the device build.
+namespace m5gfx { namespace ili9341_colors {
+static constexpr int BLACK=0,NAVY=0x000F,DARKGREEN=0x03E0,DARKCYAN=0x03EF,MAROON=0x7800,PURPLE=0x780F,OLIVE=0x7BE0,
+  LIGHTGREY=0xC618,DARKGREY=0x7BEF,BLUE=0x001F,GREEN=0x07E0,CYAN=0x07FF,RED=0xF800,MAGENTA=0xF81F,YELLOW=0xFFE0,
+  WHITE=0xFFFF,ORANGE=0xFDA0,GREENYELLOW=0xB7E0,PINK=0xFE19; } }
+using namespace m5gfx::ili9341_colors;

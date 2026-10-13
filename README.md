@@ -81,6 +81,16 @@ The secondary layer is intentionally functional rather than decorative: conversi
 
 **Numeric 2nd layer (always available):** π e % ^ | BS ± ABS mod | 1/x ANS EE %Δ | CLR MR MS MC
 
+## v1.8 guide, haptics, truthful keys
+
+- **Build fix:** renamed `WHITE`/`BLACK` (clashed with M5GFX). The test mock now mirrors M5GFX color names.
+- **Key click:** 9 ms synthesized snap (noise pop + 2.4 kHz tick + 340 Hz body) plus a 14 ms full-power motor kick, non-blocking.
+- **On-device guide:** tap the top of the display. 26 cards: "how it works" + task recipes + every-key reference per calculator. `[KEY]` draws as a mini keycap; `2ND [x]` as purple 2ND + lime legend.
+- **Tape view:** tap the bottom of the display for the last 8 results.
+- **One guide source:** `docs/guide_src.py` generates `src/guide_text.h`, `website/guide.html`, `USER_MANUAL.md`. Every example number is checked by `test/run_tests.sh` (121 checks).
+- **Keys that lied now tell the truth:** OHM/PWR uses the two values entered last (any of V A R P); new 2nd keys KV?, packV, rps, lb, T/W, ft, yd3, set (PMT), reset (AMORT), QTY, OZ>g, lb>kg, Sclr; 2nd legends renamed to what they do.
+- **Math fixes:** cup->gal factor, STAIRS feet/inch mix, PAYOFF no longer overwrites TERM, `a + b %` adds b percent, `d%` clears the pending op, WAVE uses the typed number, typing 0 counts in wizards, area/volume units on tape.
+
 ## v1.7 skeuomorphic UI
 
 - Brushed-gunmetal bezel, recessed LCD glass with 16-cell 7-segment readout + ghost segments, LCD annunciators (page, 2ND, M, ENG, Cu/Al, wizard step, V A R P C L f d).

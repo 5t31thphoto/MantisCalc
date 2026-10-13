@@ -1,249 +1,363 @@
-# MantisCalc User Manual
+# MantisCalc User Guide
 
-**M5Stack Core2 · Engineering & trades multitool**  
-Built on GitHub Actions · No menus · Stamp units, then solve
+_Generated from `docs/guide_src.py` - the same text is on the device (tap the top of the display)._
 
----
+**Notation:** `[KEY]` = press that key. `2ND [x]` = press **B** (or the 2ND bar), then the key whose small lime label is *x*. `->` = what the display shows.
 
-## 1. Hardware & navigation
-
-| Control | Action |
-|---------|--------|
-| **A** (touch bar or physical) | Previous page |
-| **C** (touch bar or physical) | Next page |
-| **B** (touch bar or physical) | Latch / unlatch **2ND** |
-| Function keys (2 rows × 6) | Domain keys; small **2** mark = has secondary |
-| Number pad | Digits and operators always available |
-| **2ND** + number pad | CLR, BS, memory, constants, EE, % |
-
-When **2ND** is on, the header shows a purple **2ND** badge and keys show their secondary labels (lime text).
-
-**Pages (A/C):** MATH → ELEC → MECH/RF → BUILD → KITCHEN → MONEY → …
-
-**On-device guide:** 2ND + tap header. Full screen. **A** prev / **C** next guide page, **B** exit. Labels above the buttons.
-
-**Register flags** (header right): green pills **V A R P C L f d** appear when those registers are set.
-
-**Tape:** last calculations scroll under the display value.
-
-**Splash:** brand screen for ~1.5 s at boot.
-
----
-
-## 2. Basic calculator (always)
-
-| Key | Primary | 2ND |
-|-----|---------|-----|
-| 0–9 . | Enter digits / decimal | — |
-| + - * / | Add subtract multiply divide | — |
-| = | Complete pending operation | — |
-| 2ND π | — | Insert π |
-| 2ND e | — | Insert *e* |
-| 2ND % | — | Value ÷ 100 |
-| 2ND ^ | — | Power (yˣ); enter base, 2ND ^, exponent, = |
-| 2ND BS | — | Backspace |
-| 2ND +/- | — | Change sign |
-| 2ND ABS | — | Absolute value |
-| 2ND mod | — | Remainder (pending %) |
-| 2ND 1/x | — | Reciprocal |
-| 2ND ANS | — | Recall last answer (or memory) |
-| 2ND EE | — | Scientific entry (`1e`) |
-| 2ND d% | — | Percent change vs pending left operand |
-| 2ND CLR | — | Clear entry, steps, operators |
-| 2ND MR / MS / MC | — | Memory recall / store / clear |
-
-Operators use **ASCII** `+` `-` `*` `/` `=` so they always render correctly on the Core2 font.
-
----
-
-## 3. Wizard pattern (preferred for multi-input tools)
-
-Type a number → press the tool key → header shows the step name → repeat until the result.
-
-Examples: **OHM/PWR** `V → A → ohm/W` · **VDROP** `V → A → ft → awg → drop` · **PMT** `PV → APR → mo → pay` · **PAINT** `perim → ht → doors → wins → coats → cov → gal` · **BAKE** `flour → hydr% → water`
-
-Unit-stamp keys (VOLTS, AMPS, …) still work; if registers are already filled, some tools solve immediately.
-
-## 3b. How unit stamping works
-
-1. Type a number.  
-2. Press a **unit key** (e.g. VOLTS). That stores the value in a named register and stamps its unit.  
-3. Press a **solver** key (possibly repeatedly). Solvers read whichever registers are set and fill the missing quantity.
-
-Example — Ohm’s law:
+## How This Calculator Works
 
 ```
-120  VOLTS
-15   AMPS
-OHM/PWR     → 8 ohm
-OHM/PWR     → 1800 W
+1 Normal math always works:   12 * 4 =
+2 STORE: type a number, press its key
+    120 [VOLTS]   tape line: = 120 V
+3 SOLVE: press a tool key ([OHM/PWR] [PMT])
+    it uses the numbers you stored
+4 Missing one? It beeps, or the top of the
+    display asks (V? flour? PV?): type it
+    and press the same tool key again
+5 2ND: press B, then a key. You get the
+    small lime word printed on that key
+6 Tap bottom of display: recent results
+  2ND [CLR] clears   A / C: other calculator
+Guide: tap right = next card, left = back
 ```
 
----
+## MATH - scientific
 
-## 4. ELEC page
+### MATH  quick recipes
 
-### Unit keys
+```
+Fraction: 0.375 [FRAC]  -> tape 3/8
+  2.625 [FRAC] -> tape 21/8  (= 2 5/8)
+Power:   2 2ND [^] 10 =   -> 1024
+Root:    81 [sqrt]        -> 9
+Trig uses DEGREES:
+  30 [SIN] -> 0.5    0.5 2ND [asin] -> 30
+Tip 18 %:  85 * 18 2ND [%] =   -> 15.3
+Add 8 %:   49.99 + 8 2ND [%] = -> 53.99
+Big/small: 4.7 2ND [EE] 6   -> 4700000
+  tiny: 1 2ND [EE] 2ND [+/-] 6 -> 0.000001
+Memory: 2ND [MS] store   2ND [MR] recall
+```
 
-| Primary | 2ND | Meaning |
-|---------|-----|---------|
-| **VOLTS** | mV | Stamp volts; 2ND scales current entry as millivolts into V register |
-| **AMPS** | mA | Stamp amps; 2ND → milliamps |
-| **OHMS** | kOhm | Stamp ohms; 2ND → kilohms |
-| **WATTS** | dB | Stamp watts; 2ND → 20·log₁₀ of entry (dB) |
-| **FARAD** | uF | Stamp farads; 2ND → microfarads |
-| **Hz** | wave | Stamp frequency; 2ND → wavelength (c/f) in metres |
-| **HENRY** | mH | Stamp inductance (H); 2ND → millihenries. Needed for XL/XC and RLC. |
+### MATH  averages and lists
 
-### Tool keys
+```
+Average some measurements:
+  12.5 [STAT] 13.1 [STAT] 12.8 [STAT]
+  2ND [minMx] -> 12.5 (the smallest)
+  tap display bottom: max, sum, mean 12.8
+New list: 2ND [Sclr]
+Radio wavelength from frequency:
+  146 2ND [EE] 6 [WAVE] -> 2.053 m
+Engineering display (E3, E6): 2ND [ENG]
+```
 
-| Primary | 2ND | How to use |
-|---------|-----|------------|
-| **DIST** | PF | Stamp one-way wire length (ft). **2ND PF:** needs P, V, A → power factor P/(V·I). |
-| **OHM/PWR** | XL/XC | **Sequential.** Needs any two of V,I,R (or P). Press repeatedly: (1) solve missing V/I/R (2) power (3) R from P (4) V or I from P. **2ND:** reactance — needs Hz + L or C → XL or XC. |
-| **VDROP** | Al/Cu | **Sequential.** Needs V (source), A, DIST (ft). Optional: stamp AWG into answer first. Steps: (1) voltage drop (2) % drop (3) AWG for ≤3% (4) AWG for ≤1%. **2ND (Al/Cu)** toggles copper vs aluminum (K=12.9 vs 21.2). Header shows `Al` when aluminum. |
-| **FILT** | RLC | Needs R and C. Steps: (1) fc = 1/(2πRC) + tape τ (2) τ=RC (3) 0.693·RC. **2ND:** resonant f = 1/(2π√(LC)) — needs L and C. |
-| **AWG** | cmil | With A+DIST+V set → recommended AWG for 3% + tape drop. Else enter gauge number → stamp AWG and tape circular mils. **2ND:** enter AWG → show cmil only. |
+### MATH  every key
 
-**Test vector:** 120 V, 15 A, 75 ft, 14 AWG → ~7.07 V drop, ~5.9%. Required AWG for 3% ≈ 10–11.
+```
+[x^2]  square       2ND [sqrt] root
+[sqrt] root         2ND [x^2] square
+[1/x]  1 / x        2ND [%] x / 100
+[LOG]  log base 10  2ND [10^x]
+[LN]   natural log  2ND [e^x]
+[e^x]  e to the x   2ND [Sclr] clear STAT
+[SIN] [COS] [TAN]   2ND asin acos atan
+[WAVE] meters from Hz   2ND [f] store Hz
+[FRAC] fraction     2ND [ENG] display
+[STAT] add to list  2ND [minMx] results
+Pad 2ND: pi e % ^ BS +/- ABS mod 1/x
+  ANS EE d% CLR MR MS MC
+```
 
----
+## ELEC - electrical
 
-## 5. MECH / RF page
+### ELEC  Ohm's law and power
 
-| Primary | 2ND | How to use |
-|---------|-----|------------|
-| **KV** | RPM | Stamp motor KV. 2ND recalls/uses RPM register relationship. |
-| **CELLS** | xV | Stamp series cell count (LiPo “S”). |
-| **RPM** | rps | Stamp RPM; 2ND → revolutions per second (÷60). |
-| **THRUST** | lb | Stamp thrust (grams by default); 2ND → pounds. |
-| **WEIGHT** | kg | Stamp weight (g); 2ND → kg. |
-| **RATIO** | gear | Stamp gear ratio; 2ND runs gear solve (RPM/ratio or torque×ratio). |
-| **PROP** | mph | Needs KV, CELLS, DIAM (and optional PITCH). Computes RPM and approx pitch speed (mph). 2ND: speed from RPM+PITCH. |
-| **GEAR** | Pwr | Gear ratio solve. 2ND: mechanical power P = τ·ω from torque + RPM. |
-| **FREQ** | wave | Same as Hz / wavelength. |
-| **WAVE** | ft | Wavelength from frequency; 2ND length convert. |
-| **BAT** | Wh | Capacity (mAh) + cells → energy Wh (3.7 V nominal). Or weight/thrust ratio. |
-| **MOTOR** | torq | KV×cells×4.2 → RPM. 2ND stamps torque register from entry. |
+```
+Store any TWO of volts, amps, ohms, watts,
+then press [OHM/PWR] for the other two:
+  120 [VOLTS] 15 [AMPS] [OHM/PWR]
+      -> 8 ohm    tape: 1800 W
+  12 [VOLTS] 4 [OHMS] [OHM/PWR] -> 3 A
+  60 [WATTS] 120 [VOLTS] [OHM/PWR] -> 0.5 A
+The two you entered LAST are used.
+Small units: 2ND [mV] [mA] [kOhm] [uF] [mH]
+  4.7 2ND [kOhm] stores 4700 ohm
+Letters V A R P C L f d on the display
+  light up when that value is stored
+```
 
----
+### ELEC  wire size and voltage drop
 
-## 6. BUILD page
+```
+120 [VOLTS]   source voltage
+15 [AMPS]     load current
+75 [DIST]     ONE-WAY wire length, feet
+14 [AWG]      the wire you plan to use
+[VDROP]  -> 7.07 V lost in the wire
+  tape: 5.9 % drop, min gauge for 3 %
+Which wire do I need? Same first 3 lines,
+  then [AWG] with nothing typed -> 11
+  = thinnest for 3 % drop (buy 10 AWG)
+Aluminum: 2ND [Al/Cu]   (display shows Al)
+A calculator aid - always follow code.
+```
 
-| Primary | 2ND | How to use |
-|---------|-----|------------|
-| **RISE** | slope | Stamp rise (ft). 2ND runs slope sequential. |
-| **RUN** | ang | Stamp run (ft). 2ND → angle = atan(rise/run) in degrees. |
-| **SLOPE** | ang | Sequential: ratio → angle → percent. 2ND → angle. |
-| **ANGLE** | rise | Stamp angle (deg). 2ND → rise = run · tan(angle). |
-| **AREA** | circ | Stamp area. 2ND: circle area from diameter on entry (πd²/4). |
-| **VOL** | cyl | Stamp volume. 2ND: cylinder volume — diameter from DIAM/RISE, height from RUN/DIST. |
-| **ROOF** | hyp | Rafter/hyp length √(rise²+run²); tapes pitch angle. 2ND pure hypotenuse. |
-| **STAIRS** | # | Stringer diagonal; tapes riser count. 2ND: floor(total rise / 7.5). |
-| **BOARD** | +10% | Board feet: rise=thickness(in), run=width(in), dist=length(ft) → T·W·L/12. 2ND: ×1.10 waste. |
-| **PAINT** | net | **Sequential.** RISE=perimeter(ft), RUN=height(ft), DIST=#doors, ANGLE=#windows. (1) net area = P·H − (doors·21 + wins·15). (2) TOTAL=coats, PRICE=coverage ft²/gal (default 350) → gallons + ceil buy. 2ND: rect area from rise×run. |
-| **CONC** | yd3 | Volume (ft³) → yd³ with 10% waste (÷27 × 1.1). |
-| **TRIG** | inv | Cycles SIN → COS → TAN of entry (degrees). 2ND: arcsin. |
+### ELEC  filters, coils, AC
 
-**Test:** rise 12, run 16 → slope 0.75, angle ≈ 36.87°, 75%.
+```
+RC filter cutoff:
+  1000 [OHMS] 0.1 2ND [uF] [FILT]
+  -> 1591.5 Hz
+LC resonance:
+  10 2ND [mH] 100 2ND [uF] 2ND [RLC]
+  -> 159.2 Hz
+Coil reactance at 60 Hz:
+  60 [Hz] 10 2ND [mH] 2ND [XL/XC] -> 3.77
+Power factor: 900 [WATTS] 120 [VOLTS]
+  10 [AMPS] 2ND [PF] -> 0.75
+Gain: 2 2ND [dB] -> 6.02 dB
+```
 
-**Paint test:** perim 48, h 8, 1 door, 2 windows, 2 coats → net 333 ft², ≈1.90 gal.
+### ELEC  every key
 
----
+```
+[VOLTS] [AMPS] [OHMS] [WATTS] store V A R P
+  2ND [mV] [mA] [kOhm]   WATTS 2ND [dB]
+[FARAD] store C      2ND [uF]
+[HENRY] store L      2ND [mH]
+[Hz] store freq.     2ND [wave] meters
+[DIST] wire feet     2ND [PF] power factor
+[OHM/PWR] solve      2ND [XL/XC] reactance
+[VDROP] wire drop    2ND [Al/Cu] metal
+[FILT] RC cutoff     2ND [RLC] resonance
+[AWG] gauge          2ND [cmil] wire area
+  [AWG] with nothing typed = best gauge
+```
 
-## 7. KITCHEN page
+## MECH/RF - motors, props, radio
 
-| Primary | 2ND | How to use |
-|---------|-----|------------|
-| **FLOUR** | % | Stamp flour weight (g). 2ND: baker’s % of total vs flour. |
-| **TOTAL** | /serv | Stamp total dough/mix weight. 2ND stamps servings from entry. |
-| **HYDR%** | H2O | Stamp hydration %. 2ND: water mass = flour × hydr/100. |
-| **SERV** | dens | Stamp servings. 2ND: density-like total/servings. |
-| **TEMP** | F | Stamp °C. 2ND stamps as °F. |
-| **PRICE** | x | Stamp unit price. 2ND: price × total. |
-| **BAKE** | next | Sequential baker helpers: total → water from hydr → hydr from total → per serving. |
-| **RECIPE** | scale | total/servings. 2ND recipe %. |
-| **DENS** | g/cup | per-serving mass; 2ND CONVERT. |
-| **CONV** | C<>F | **Volume chain** (press repeatedly): cup → tbsp → tsp → mL → L → gal. **2ND:** typed °C → °F, or toggles the TEMP register C↔F. |
-| **AREA** | pan | Stamp area; 2ND round pan area from diameter. |
-| **VOL** | pan | Stamp volume; 2ND cylinder/pan volume. |
+### MECH/RF  motors and props
 
----
+```
+Motor top rpm (full charge, no load):
+  2300 [KV] 4 [CELLS] [MOTOR] -> 38640
+Prop pitch speed - type, press [PROP]:
+  2300 [PROP]  4 [PROP]   (KV, cells)
+  5 [PROP]  4.5 [PROP]    (diam in, pitch in)
+  -> 164.7 mph
+Battery: 2200 [BAT] 3 [BAT] -> 24.4 Wh
+  (mAh, cells)
+Pack volts: 4 2ND [packV] -> 14.8 V
+Thrust to weight: 1600 [THRUST]
+  800 [WEIGHT] 2ND [T/W] -> 2
+  tape: hover at 50 % throttle
+```
 
-## 8. MONEY page
+### MECH/RF  gears, power, radio
 
-| Primary | 2ND | How to use |
-|---------|-----|------------|
-| **PRINC** | PV | Stamp principal. 2ND: present value of annuity (needs PMT, TERM, RATE). |
-| **RATE%** | I/mo | Annual interest %. 2ND: monthly interest only = P·r/12. |
-| **TERM** | n mo | Number of months. 2ND: solve months from P, PMT, rate. |
-| **PMT** | solve | Runs loan payment solve (needs PRINC, RATE, TERM). 2ND starts amort step mode. |
-| **INT** | total | Monthly interest-only; 2ND re-runs full loan (payment + total interest). |
-| **SAV** | FV | Compound growth FV; 2ND same FV. |
-| **PAYOFF** | extra | Months to pay off with optional EXTRA payment. |
-| **AMORT** | step | Each press: balance after N months + interest component that month. |
-| **%** | d% | ÷100; 2ND percent delta. |
-| **ROUND** | sig | 2 decimal places; 2ND 3 significant figures. |
-| **PRICE** / **TOTAL** | x / sum | Line totals / cashflow. |
+```
+Gear output: 3000 [RPM] 3 [RATIO] [GEAR]
+  -> 1000 rpm
+Shaft power: 2 2ND [torq]  (N-m)
+  3000 [RPM] 2ND [Pwr] -> 628.3 W
+KV from measured rpm:
+  10000 [RPM] 3 [CELLS] 2ND [KV?] -> 793.7
+Antenna wavelength:
+  146 2ND [EE] 6 [FREQ] [WAVE] -> 2.053 m
+  2ND [ft] -> 6.737 ft
+rpm to rev/sec: 3000 2ND [rps] -> 50
+grams to lb: 1600 2ND [lb] -> 3.527
+```
 
-**Test:** $100 000, 5%, 360 months → PMT ≈ **$536.82**.
+### MECH/RF  every key
 
----
+```
+[KV] store KV         2ND [KV?] solve KV
+[CELLS] LiPo count    2ND [packV] volts
+[RPM] store rpm       2ND [rps] rpm / 60
+[THRUST] grams        2ND [lb] in pounds
+[WEIGHT] grams        2ND [T/W] ratio
+[RATIO] gear ratio    2ND [gear] = GEAR
+[PROP] pitch speed    2ND [mph] from RPM
+[GEAR] output rpm     2ND [Pwr] watts
+[FREQ] store Hz       2ND [wave] meters
+[WAVE] meters         2ND [ft] feet
+[BAT] mAh,S -> Wh     2ND [Wh] recompute
+[MOTOR] KV,S -> rpm   2ND [torq] store N-m
+```
 
-## 9. MATH page
+## BUILD - construction
 
-| Primary | 2ND | How to use |
-|---------|-----|------------|
-| **x^2** | sqrt | Square / square root |
-| **sqrt** | x^2 | Square root / square |
-| **1/x** | % | Reciprocal / percent |
-| **LOG** | 10^x | log₁₀ / antilog 10ˣ |
-| **LN** | e^x | Natural log / exp |
-| **e^x** | LN | exp / ln |
-| **SIN COS TAN** | asin acos atan | Degrees in, degrees out for inverses |
-| **WAVE** | f | Wavelength ↔ frequency |
-| **FRAC** | ENG | Best rational a/b (den ≤ 10 000). Tape shows `355/113` for π. **2ND:** engineering notation toggle on display. |
-| **STAT** | minMx | Each press adds sample (n, min, max, Σ). 2ND reports min/max/Σ/mean. CLR clears stats with entry clear. |
+### BUILD  slopes, roofs, heights
 
----
+```
+Roof pitch 4 in 12:
+  4 [RISE] 12 [RUN] [SLOPE] -> 0.333
+  2ND [ang] -> 18.43 degrees
+Rafter: 4 [RISE] 12 [RUN] [ROOF] -> 12.65
+Height of a tree or pole by angle:
+  50 [RUN]     you stand 50 ft away
+  30 [ANGLE]   angle up to the top
+  2ND [rise] -> 28.87 ft  (+ eye height)
+Height by shadow (plain math):
+  your ht x its shadow / your shadow
+  6 * 40 / 8 =  -> 30 ft
+Square check: 3 [RISE] 4 [RUN] 2ND [hyp]
+  -> 5  (diagonal)
+```
 
-## 10. Workflow recipes
+### BUILD  stairs, lumber, concrete
 
-**Wire sizing**  
-`source V` → VOLTS · `amps` → AMPS · `one-way ft` → DIST · optional gauge → AWG · VDROP ×3 for drop / % / required AWG. Toggle Al with VDROP 2ND.
+```
+Stairs: total rise floor-to-floor, FEET
+  9 [RISE] [STAIRS] -> 7.71 in per riser
+  tape: 14 risers, run, stringer length
+Board feet - type, press [BOARD]:
+  2 [BOARD] 6 [BOARD] 10 [BOARD] -> 10
+  (thick in, wide in, long ft)
+Concrete slab 10 x 10 ft, 4 in thick:
+  10 * 10 * 4 / 12 = [VOL] [CONC]
+  -> 1.36 yd3 (includes 10 % extra)
+Circle: 10 2ND [circ] -> 78.54 sq
+Post hole: 1 [RISE] 3 [RUN] 2ND [cyl]
+  -> 2.36 ft3  (diameter, depth)
+```
 
-**RC low-pass**  
-`R` → OHMS · `C` → FARAD (or uF via 2ND) · FILT.
+### BUILD  paint a room
 
-**Loan**  
-`principal` → PRINC · `apr` → RATE% · `months` → TERM · PMT.
+```
+Type each, press [PAINT] after each one:
+  48 [PAINT]   perimeter ft (12x12 room)
+  8 [PAINT]    wall height ft
+  1 [PAINT]    doors
+  2 [PAINT]    windows
+  2 [PAINT]    coats
+  350 [PAINT]  sq ft per gallon (can)
+  -> 1.90 gal    tape: buy 2
+Shortcut: after height press [PAINT]
+  with nothing typed: no doors/windows,
+  1 coat, 350 sq ft/gal
+The display top shows what PAINT wants.
+```
 
-**Baker’s water**  
-`flour g` → FLOUR · `hydration %` → HYDR% · BAKE (or HYDR% 2ND).
+### BUILD  every key
 
-**Roof rafter**  
-`rise` → RISE · `run` → RUN · ROOF.
+```
+[RISE] store rise     2ND [slope] = SLOPE
+[RUN] store run       2ND [ang] angle
+[SLOPE] rise / run    2ND [ang] angle
+[ANGLE] store deg     2ND [rise] run x tan
+[AREA] store sq ft    2ND [circ] circle
+[VOL] store cu ft     2ND [cyl] cylinder
+[ROOF] rafter         2ND [hyp] diagonal
+[STAIRS] riser ht     2ND [#] riser count
+[BOARD] board ft      2ND [+10%] waste
+[PAINT] gallons       2ND [area] RISExRUN
+[CONC] yd3 + 10 %     2ND [yd3] no extra
+[TRIG] sin cos tan    2ND [inv] asin
+```
 
-**Fraction**  
-Enter decimal · MATH · FRAC · read tape `num/den`.
+## KITCHEN - cooking and baking
 
----
+### KITCHEN  bread and baking
 
-## 11. Notes & limits
+```
+Water for a dough:
+  500 [FLOUR] 70 [HYDR%] [BAKE] -> 350 g
+  or: 500 [BAKE] 70 [BAKE]
+Salt as baker's percent:
+  500 [FLOUR] 10 [TOTAL] 2ND [%] -> 2 %
+Grams per serving:
+  1200 [TOTAL] 8 [SERV] [RECIPE] -> 150
+Scale a recipe from 8 to 12 servings:
+  each amount: 250 * 12 / 8 =  -> 375
+Round pan area: 9 2ND [pan] -> 63.62
+  pan scale = new area / old area
+```
 
-- Wire drop uses DC copper (or Al) approximation; **not** a substitute for NEC / local code.
-- Motor/prop helpers are first-order estimates.
-- Paint/concrete include simple waste factors where noted.
-- Default font is ASCII-only for labels so keys stay readable; unit tape uses `ohm`, `deg`, `yd3`, etc.
-- Firmware is produced **only** by GitHub Actions; Pages hosts USB install + merged `.bin` download.
+### KITCHEN  conversions
 
----
+```
+Cups to anything - type cups, then [CONV]
+  again and again:
+  2 [CONV] 2 cup  [CONV] 32 tbsp
+  [CONV] 96 tsp   [CONV] 473.2 mL
+  [CONV] 0.473 L  [CONV] 0.125 gal
+Oven C to F: 180 [TEMP] 2ND [C<>F] -> 356
+Oven F to C: 350 2ND [F] 2ND [C<>F]
+  -> 176.7
+8 [OZ>g] -> 226.8 g   250 2ND [g>OZ] -> 8.82
+2 [lb>kg] -> 0.907    1 2ND [kg>lb] -> 2.2
+Cost: 3.49 [PRICE] 4 [TOTAL] 2ND [cost]
+  -> 13.96
+```
 
-## 12. Brand
+### KITCHEN  every key
 
-| Color | Hex | Role |
-|-------|-----|------|
-| Teal | `#007373` | Primary keys / headers |
-| Purple | `#5d005d` | 2ND mode |
-| Lime | `#c4e000` | Accents / secondary labels |
+```
+[FLOUR] grams        2ND [%] TOTAL as %
+[TOTAL] grams        2ND [serv] servings
+[HYDR%] water %      2ND [H2O] water g
+[SERV] servings      2ND [g/serv]
+[TEMP] store C       2ND [F] store F
+[PRICE] $ each       2ND [cost] PRICExTOTAL
+[BAKE] water grams   2ND [H2O] same
+[RECIPE] per serving 2ND [%] baker %
+[OZ>g] ounces->g     2ND [g>OZ]
+[CONV] cup chain     2ND [C<>F] temp
+[AREA] store         2ND [pan] round pan
+[lb>kg] pounds->kg   2ND [kg>lb]
+```
 
+## MONEY - loans and savings
+
+### MONEY  loans
+
+```
+Payment on $25,000 at 6.5 % for 5 years:
+  25000 [PRINC] 6.5 [RATE%] 60 [TERM]
+  [PMT] -> 489.15 / month
+  or: 25000 [PMT] 6.5 [PMT] 60 [PMT]
+How much can I borrow at $400/month?
+  400 2ND [set] 6.5 [RATE%] 60 [TERM]
+  2ND [PV] -> 20,442  (PV on PRINC key)
+Pay $100 extra every month:
+  after [PMT]: 100 2ND [extra] [PAYOFF]
+  -> 49 months (last one is partial)
+Balance after each month: [AMORT] [AMORT]
+  2ND [reset] starts over
+```
+
+### MONEY  savings, percent, prices
+
+```
+Savings: $1000 at 5 % for 10 years
+  1000 [PRINC] 5 [RATE%] 120 [TERM]
+  [SAV] -> 1647.01
+Tip 18 %:  85 * 18 [%] =      -> 15.3
+Add 8 % tax: 49.99 + 8 [%] =  -> 53.99
+Change 80 -> 92:  80 - 92 2ND [d%] -> 15 %
+4 at $3.49: 3.49 [PRICE] 4 [QTY]
+  2ND [cost] -> 13.96
+Round to cents: [ROUND]   3 digits: 2ND [sig]
+Interest this month: 2ND [I/mo]
+```
+
+### MONEY  every key
+
+```
+[PRINC] loan amount  2ND [PV] max loan
+[RATE%] yearly %     2ND [I/mo] month int.
+[TERM] months        2ND [n mo] to pay off
+[PMT] payment        2ND [set] store PMT
+[INT] month interest 2ND [total] PMT again
+[SAV] future value   2ND [FV] same
+[PAYOFF] months      2ND [extra] store $
+[AMORT] next month   2ND [reset]
+[%] percent          2ND [d%] % change
+[ROUND] cents        2ND [sig] 3 digits
+[PRICE] $ each       2ND [cost]
+[QTY] how many       2ND [cost]
+```
